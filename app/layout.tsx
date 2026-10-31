@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist_Mono, Host_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
-// next/font downloads these at build time and serves them from our own origin as subset WOFF2.
-const host = Host_Grotesk({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-host', display: 'swap' });
-const mono = Geist_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-geist-mono', display: 'swap' });
+// Self-hosted Latin-subset variable WOFF2 (OFL-1.1, from Fontsource). Bundled in the repo so builds
+// never fetch from Google Fonts, which fails on Cloudflare's build machines.
+const host = localFont({ src: './fonts/host-grotesk-latin-wght-normal.woff2', weight: '300 800', variable: '--font-host', display: 'swap' });
+const mono = localFont({ src: './fonts/geist-mono-latin-wght-normal.woff2', weight: '100 900', variable: '--font-geist-mono', display: 'swap' });
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://diversifi.tech';
 const DESC = 'DFiUSD is a USD token backed by a basket of seven stablecoins, held on Ethereum by the ReserveManagerV1 contract. Reserves are on-chain and verifiable anytime.';
