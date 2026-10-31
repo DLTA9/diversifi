@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
-import { CompactStrip, IssuerVisual, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
+import { IssuerVisual, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
 import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ENTITY_FOOTNOTE, ETHERSCAN, FOOTNOTE, rmUrl, tokenUrl, VAULT_FOOTNOTE, X_URL } from '@/lib/coins';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
@@ -49,7 +49,6 @@ export default async function Home() {
                 {/* TODO(open item 4): source name. */}
                 <span className={s.source}>Q3 2026 · 195 STABLECOINS · 152 ISSUERS · SOURCE: [NAME]</span>
               </div>
-              <CompactStrip />
             </div>
             <ReservePanel />
           </div>

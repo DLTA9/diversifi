@@ -10,7 +10,7 @@ import s from '@/app/home.module.css';
 
 const reduced = () => typeof window !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------- status rail text, shared by hero panel and compact strip ---------- */
+/* ---------- status rail text for the hero panel ---------- */
 function useRail() {
   const { reading, mode, ageMin } = useReserve();
   const t = hhmm(reading.readAt);
@@ -61,17 +61,6 @@ export function MarketMorph() {
         <button type="button" aria-pressed={!m} onClick={() => pick(0)} className={!m ? s.on : undefined}>market</button>
         <button type="button" aria-pressed={!!m} onClick={() => pick(1)} className={m ? s.on : undefined}>dfiusd</button>
       </div>
-    </div>
-  );
-}
-
-/* ---------- compact strip (below 888px) ---------- */
-export function CompactStrip() {
-  const rail = useRail();
-  return (
-    <div className={s.compact}>
-      <div className={s.compactRail}><span>RESERVE · 7 COINS</span><span style={{ color: rail.color }}>{rail.text}</span></div>
-      <ReserveBar size="sm" />
     </div>
   );
 }
