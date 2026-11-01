@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
-import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
+import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, TokenAddress } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
 
@@ -156,14 +156,13 @@ export default async function Home() {
               </div>
             </div>
             <dl className={s.dl}>
-              <div><dt>TOKEN</dt><dd><span>DFiUSD · ERC-20</span><a href={tokenUrl} target="_blank" rel="noopener" aria-label="DFiUSD token on Etherscan">0xDF10…AfBf →</a></dd></div>
+              <div><dt>TOKEN</dt><dd><TokenAddress /></dd></div>
               <div><dt>RESERVE CONTRACT</dt><dd><span>ReserveManagerV1</span><a href={rmUrl} target="_blank" rel="noopener" aria-label="ReserveManagerV1 on Etherscan">0x8978…8327 →</a></dd></div>
               <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
               <div><dt>LIVE SINCE</dt><dd><span>Sep 2025</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx →</a></dd></div>
               <div><dt>SOURCE</dt><dd>verified on Etherscan</dd></div>
               {/* TODO(open item 4): link both audit reports once public. */}
               <div><dt>AUDITS</dt><dd>{CERTIK_PUBLIC ? 'Nethermind & CertiK' : 'Nethermind'}</dd></div>
-              <div><dt>DECIMALS</dt><dd>18</dd></div>
             </dl>
           </div>
         </section>

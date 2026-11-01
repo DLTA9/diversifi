@@ -145,6 +145,12 @@
 .dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .dl dt { font-size: 13px; font-weight: 500; letter-spacing: .02em; color: var(--dim); }
 .dl dd { margin: 0; display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-end; color: var(--fg); }
+.addr { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+.addrText { font-size: 13px; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.copyBtn { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; margin: -6px 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--dim); cursor: pointer; transition: color 160ms, border-color 160ms; }
+.copyBtn:hover { color: var(--fg); border-color: var(--strong); }
+.addrLink { flex: none; font-size: 15px; text-decoration: none; color: var(--signal); }
+.addrLink:hover { opacity: .75; }
 
 /* ---------- 07 final CTA ---------- */
 .final { margin-top: 104px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
