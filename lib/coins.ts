@@ -32,6 +32,9 @@ export const coinUrl = (c: Coin) => `${ETHERSCAN}/token/${c.address}?a=${RM_ADDR
 export const txUrl = (hash: string) => `${ETHERSCAN}/tx/${hash}`;
 
 export const DOCS_URL = 'https://docs.diversifi.tech/';
+export const TERMS_URL = 'https://docs.diversifi.tech/terms/general-tos';
+// TODO: whitepaper URL. The docs site has no whitepaper page yet.
+export const WHITEPAPER_URL = '#';
 // TODO(open item 4): contact address and X handle are unconfirmed.
 export const CONTACT_MAIL = 'mailto:hello@diversifi.tech';
 export const X_URL = 'https://x.com/';

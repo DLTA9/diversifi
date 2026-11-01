@@ -139,11 +139,10 @@
 .subBtn { padding: 0 20px; }
 .subBtn:hover { border-color: var(--fg); }
 
-/* ---------- footer ---------- */
-.footer { padding-top: 64px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 40px; }
-.fcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 40px 24px; }
-.fcol { display: flex; flex-direction: column; gap: 12px; }
-.fcol a { color: var(--fg); text-decoration: none; font-size: 15px; }
-.fcol a:hover { color: var(--signal); }
-.fnotes { display: flex; flex-direction: column; gap: 8px; max-width: 72em; }
-.fbottom { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid var(--line); }
+/* resource links under "open app" in the final CTA */
+.resLinks { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-top: 8px; font-size: 15px; }
+.resLinks a { display: inline-flex; align-items: center; min-height: 44px; color: var(--fg); text-decoration: none; }
+.resLinks a:hover { color: var(--signal); }
+
+/* wordmark + copyright, closing the final CTA (there is no separate page footer) */
+.sign { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }

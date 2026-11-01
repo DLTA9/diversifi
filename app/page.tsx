@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerVisual, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ENTITY_FOOTNOTE, ETHERSCAN, FOOTNOTE, rmUrl, tokenUrl, VAULT_FOOTNOTE, X_URL } from '@/lib/coins';
+import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
 
@@ -185,37 +185,23 @@ export default async function Home() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <span className="label">ONE TOKEN · SEVEN STABLECOINS UNDERNEATH</span>
                 <Link href="/app" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>open app</Link>
+                <nav aria-label="resources" className={s.resLinks}>
+                  <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
+                  <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
+                  <a href={TERMS_URL} target="_blank" rel="noopener">terms of service ↗</a>
+                  <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
+                </nav>
+                <footer className={s.sign}>
+                  <Wordmark size={21} mark={24} />
+                  <span className="mono dim" style={{ fontSize: 13 }}>© 2026 DiversiFi</span>
+                </footer>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <Signup />
-                <a href={X_URL} target="_blank" rel="noopener" style={{ alignSelf: 'flex-start', fontSize: 15 }}>or follow on X ↗</a>
-              </div>
+              <Signup />
             </div>
           </div>
         </section>
       </main>
 
-      <footer className={`wrap ${s.footer}`}>
-        <div className={s.fcols}>
-          <div className={s.fcol}><span className="label">PRODUCT</span><Link href="/app">open app</Link><a href="#reserve">reserve</a><a href="#how">how it works</a></div>
-          <div className={s.fcol}><span className="label">PROOF</span><a href="#docs">audits</a><a href={tokenUrl} target="_blank" rel="noopener">DFiUSD on Etherscan</a><a href={rmUrl} target="_blank" rel="noopener">ReserveManagerV1 on Etherscan</a></div>
-          <div className={s.fcol}><span className="label">BUILD</span><a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a><a href="#docs">contracts</a><a href={CONTACT_MAIL}>talk to us</a></div>
-          <div className={s.fcol}>
-            <span className="label">LEGAL</span>
-            <a href="https://docs.diversifi.tech/terms/general-tos" target="_blank" rel="noopener">general terms ↗</a>
-            {/* TODO(open item 4): privacy policy URL. */}
-            <a href="#">privacy</a>
-            <a href="https://docs.diversifi.tech/terms/dfiusd-tos" target="_blank" rel="noopener">DFiUSD terms of use ↗</a>
-            <a href="https://docs.diversifi.tech/terms/mint-tos" target="_blank" rel="noopener">mint agreement ↗</a>
-          </div>
-          <div className={s.fcol}><span className="label">FOLLOW</span><a href={X_URL} target="_blank" rel="noopener">X ↗</a></div>
-        </div>
-        <div className={`foot ${s.fnotes}`}><p>{FOOTNOTE}</p><p>{VAULT_FOOTNOTE}</p><p>{ENTITY_FOOTNOTE}</p></div>
-        <div className={s.fbottom}>
-          <Wordmark size={21} mark={24} />
-          <span className="mono dim" style={{ fontSize: 13 }}>proof, not promises. · © 2026 DiversiFi</span>
-        </div>
-      </footer>
     </ReserveProvider>
   );
 }
