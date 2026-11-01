@@ -14,19 +14,21 @@
 .heroL { display: flex; flex-direction: column; gap: 24px; max-width: 640px; min-width: 0; }
 .ctaRow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 .conc { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; padding-top: 20px; border-top: 1px solid var(--line); }
-.concStat { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; align-items: baseline; }
-.big { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: clamp(28px, 2.8vw, 40px); line-height: 1; letter-spacing: -0.03em; }
+.concStat { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; align-items: center; }
+.big { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: clamp(32px, 3vw, 42px); line-height: .8; letter-spacing: -0.03em; }
 .source { font-family: var(--mono); font-size: 12px; letter-spacing: .02em; color: var(--dim); }
 
 .morph { display: flex; flex-direction: column; gap: 8px; }
 .morphFig { display: flex; flex-direction: column; gap: 8px; }
 .morphHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; color: var(--dim); }
 .morphBar { display: flex; gap: 2px; height: 14px; }
-.morphBar i { position: relative; min-width: 0; border-radius: 2px; overflow: hidden; transition: flex-grow 1000ms cubic-bezier(.65, 0, .35, 1), background-color 700ms; }
-.morphBar b { position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(13, 14, 16, .55) 0 3px, transparent 3px 7px); transition: opacity 500ms; }
-.toggle { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 6px; align-self: flex-start; }
-.toggle button { height: 32px; padding: 0 10px; border: 0; border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 12px; background: transparent; color: var(--dim); }
-.toggle button.on { background: var(--fg); color: var(--bg); }
+.morphBar i { position: relative; min-width: 0; border-radius: 2px; overflow: hidden; transition: background-color 400ms, box-shadow 400ms; }
+/* stripes are one 45° period (7px × √2) wider than the slice so the crawl loops seamlessly */
+.morphBar b { position: absolute; top: 0; bottom: 0; left: -9.9px; right: 0; background: repeating-linear-gradient(135deg, rgba(13, 14, 16, .55) 0 3px, transparent 3px 7px); animation: stripes 900ms linear infinite; }
+@keyframes stripes { to { transform: translateX(9.9px); } }
+.morphBar i.hot { box-shadow: 0 0 14px rgba(240, 86, 83, .55); }
+.morphBar i.hot b { animation-duration: 350ms; }
+@media (prefers-reduced-motion: reduce) { .morphBar b { animation: none; } }
 
 
 .panel { background: var(--raised); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
