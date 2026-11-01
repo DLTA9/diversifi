@@ -239,8 +239,8 @@ export function AppFlow() {
               <p className="h3" style={{ maxWidth: '18em' }}>connect a wallet to mint or redeem DFiUSD.</p>
               <div id="wallets" className={s.wallets}>
                 {WALLETS.map(w => (
-                  <button key={w.id} type="button" className={s.walletRow} onClick={() => pick(w.id)} disabled={connecting}>
-                    <span>{w.name}</span><span className={s.kind}>{w.kind}</span>
+                  <button key={w.id} type="button" className={s.walletRow} onClick={() => pick(w.id)} disabled={connecting || !w.ready}>
+                    <span>{w.name}</span><span className={s.kind}>{w.ready ? w.kind : 'NOT SET UP'}</span>
                   </button>
                 ))}
               </div>
