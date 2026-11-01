@@ -52,12 +52,12 @@ export function ReserveBar({ size = 'md', readout = false, showTotal = true, ani
       if (reduce) { setP(1); setSettled(true); return; }
       const t0 = performance.now();
       const step = (t: number) => {
-        const k = Math.min(1, (t - t0) / 800);
+        const k = Math.min(1, (t - t0) / 1600);
         setP(1 - Math.pow(1 - k, 4));
         if (k < 1) timers.current.raf = requestAnimationFrame(step);
       };
       timers.current.raf = requestAnimationFrame(step);
-      timers.current.done = window.setTimeout(() => setSettled(true), 1400);
+      timers.current.done = window.setTimeout(() => setSettled(true), 2600);
     };
     const el = root.current!;
     const io = new IntersectionObserver(es => { if (es[0].isIntersecting) { io.disconnect(); go(); } }, { threshold: 0.25 });
@@ -121,7 +121,7 @@ export function ReserveBar({ size = 'md', readout = false, showTotal = true, ani
               style={{
                 flex: `${data[i].current} 1 0px`,
                 opacity: !shown && !loading ? 0 : h >= 0 && h !== i ? 0.35 : 1,
-                transitionDelay: settled ? '0ms' : 300 + i * 60 + 'ms',
+                transitionDelay: settled ? '0ms' : 500 + i * 110 + 'ms',
               }}
             >
               <i className={s.stem} style={{ height: stagger && i % 2 ? 44 : 14 }} />

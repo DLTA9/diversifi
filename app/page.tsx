@@ -43,7 +43,7 @@ export default async function Home() {
               <div className={s.conc}>
                 <div className={s.concStat}>
                   <span className={s.big}>61%</span>
-                  <p className="pretty" style={{ fontSize: 16, lineHeight: 1.4 }}>of all stablecoin supply still sits with one issuer. DFiUSD spreads its backing across seven.</p>
+                  <p className="pretty" style={{ fontSize: 16, lineHeight: 1.4 }}>of all stablecoin supply still sits with one issuer. DFiUSD spreads its backing across multiple.</p>
                 </div>
                 <MarketMorph />
                 {/* TODO(open item 4): name the source for these figures if it should be shown. */}

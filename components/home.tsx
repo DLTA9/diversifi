@@ -22,44 +22,40 @@ function useRail() {
   }[mode];
 }
 
-/* ---------- 1d: market vs DFiUSD morph ---------- */
+/* ---------- 1d: market concentration ---------- */
 const MARKET = [61, 9, 8, 7, 6, 5, 4];
+const ALERT_EVERY = 5600;
+const ALERT_MS = 1500;
 
 export function MarketMorph() {
-  const [m, setM] = useState(0);
-  const [picked, setPicked] = useState(false);
+  // Stripes crawl on the 61% slice; every few seconds it flashes red. Reduced motion: still, never red.
+  const [alert, setAlert] = useState(false);
 
   useEffect(() => {
-    if (picked) return;
-    if (reduced()) { setM(1); return; }
-    let iv = 0;
-    const first = window.setTimeout(() => {
-      setM(1);
-      iv = window.setInterval(() => setM(v => (v ? 0 : 1)), 4200);
-    }, 2600);
-    return () => { clearTimeout(first); clearInterval(iv); };
-  }, [picked]);
+    if (reduced()) return;
+    let off = 0;
+    const flash = () => { setAlert(true); off = window.setTimeout(() => setAlert(false), ALERT_MS); };
+    const first = window.setTimeout(flash, 2400);
+    const iv = window.setInterval(flash, ALERT_EVERY);
+    return () => { clearTimeout(first); clearTimeout(off); clearInterval(iv); };
+  }, []);
 
-  const pick = (v: number) => { setPicked(true); setM(v); };
+  const hot = alert ? 'var(--crit)' : 'var(--warn)';
 
   return (
     <div className={s.morph}>
-      <div role="img" aria-label="Comparison. Stablecoin market: one issuer holds 61% of supply, 151 issuers share the other 39%. DFiUSD reserve: seven coins, largest share 30%." className={s.morphFig}>
+      <div role="img" aria-label="Stablecoin market: one issuer holds 61% of supply, 151 issuers share the other 39%." className={s.morphFig}>
         <div className={s.morphHead}>
-          <span style={{ color: 'var(--fg)' }}>{m ? 'DFIUSD' : 'THE MARKET'}</span>
-          <span style={{ color: m ? 'var(--dim)' : 'var(--warn)', transition: 'color 400ms' }}>{m ? '7 COINS · LARGEST SHARE 30%' : '1 ISSUER · 61% · 151 OTHERS · 39%'}</span>
+          <span style={{ color: 'var(--fg)' }}>THE MARKET</span>
+          <span style={{ color: hot, transition: 'color 400ms' }}>1 ISSUER · 61% · 151 OTHERS · 39%</span>
         </div>
         <div className={s.morphBar}>
-          {COINS.map((c, i) => (
-            <i key={c.t} style={{ flex: `${m ? c.s : MARKET[i]} 1 0px`, background: m ? c.color : i === 0 ? 'var(--warn)' : 'var(--strong)' }}>
-              <b style={{ opacity: !m && i === 0 ? 1 : 0 }} />
+          {MARKET.map((v, i) => (
+            <i key={i} className={i === 0 && alert ? s.hot : undefined} style={{ flex: `${v} 1 0px`, background: i === 0 ? hot : 'var(--strong)' }}>
+              {i === 0 && <b />}
             </i>
           ))}
         </div>
-      </div>
-      <div role="group" aria-label="compare" className={s.toggle}>
-        <button type="button" aria-pressed={!m} onClick={() => pick(0)} className={!m ? s.on : undefined}>market</button>
-        <button type="button" aria-pressed={!!m} onClick={() => pick(1)} className={m ? s.on : undefined}>dfiusd</button>
       </div>
     </div>
   );
@@ -81,17 +77,25 @@ function RollingBlock({ n }: { n: number }) {
 export function ReservePanel() {
   const { reading, mode, refresh } = useReserve();
   const rail = useRail();
-  // intro: 0 = ring hidden, 1 = arcs drawing, 2 = ring out / bar in. Once per visit.
+  // intro: 0 = ring hidden, 1 = arcs drawing, 2 = ring out / bar in. Plays on every load.
   const [intro, setIntro] = useState(0);
   const [block, setBlock] = useState(reading.block);
   const [ago, setAgo] = useState(0);
 
   useEffect(() => {
-    if (reduced() || sessionStorageGet('dfi-intro')) { setIntro(2); return; }
-    sessionStorageSet('dfi-intro');
-    const a = window.setTimeout(() => setIntro(1), 120);
-    const b = window.setTimeout(() => setIntro(2), 1250);
-    return () => { clearTimeout(a); clearTimeout(b); };
+    if (reduced()) { setIntro(2); return; }
+    // Wait for the full page load and two painted frames, so a slow device or connection doesn't swallow the intro.
+    let a = 0, b = 0, raf = 0;
+    const go = () => {
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(() => {
+          a = window.setTimeout(() => setIntro(1), 200);
+          b = window.setTimeout(() => setIntro(2), 2100);
+        });
+      });
+    };
+    if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
+    return () => { window.removeEventListener('load', go); cancelAnimationFrame(raf); clearTimeout(a); clearTimeout(b); };
   }, []);
 
   // Block heartbeat: progress line fills over 12s, block number rolls each slot, re-synced on every read.
@@ -120,7 +124,7 @@ export function ReservePanel() {
       <p className="h3">7 stablecoins, no single issuer.</p>
       {mode === 'unavailable' && <p className="small">reserve data couldn&apos;t load. <span className="dim">last reading {lastAt} UTC.</span></p>}
       <div style={{ position: 'relative' }}>
-        <div style={{ opacity: intro >= 2 ? 1 : 0, transition: 'opacity 300ms' }}>
+        <div style={{ opacity: intro >= 2 ? 1 : 0, transition: 'opacity 500ms' }}>
           <ReserveBar size="md" readout showTotal={false} start={intro >= 2} />
         </div>
         <div aria-hidden="true" className={s.ring} style={{ opacity: intro >= 2 ? 0 : 1, transform: intro >= 2 ? 'scale(.55) rotate(120deg)' : 'none' }}>
@@ -128,7 +132,7 @@ export function ReservePanel() {
             <g fill="none" transform="rotate(-90 50 50)" strokeWidth={10}>
               {ARCS.map((a, i) => (
                 <circle key={i} cx={50} cy={50} r={40} stroke={COINS[i].color} strokeDashoffset={a.o}
-                  style={{ strokeDasharray: intro >= 1 ? a.d : '0 251.33', transition: `stroke-dasharray 520ms var(--ease) ${i * 90}ms` }} />
+                  style={{ strokeDasharray: intro >= 1 ? a.d : '0 251.33', transition: `stroke-dasharray 800ms var(--ease) ${i * 130}ms` }} />
               ))}
             </g>
             <circle cx={50} cy={50} r={8} fill="var(--signal)" />
@@ -149,9 +153,6 @@ export function ReservePanel() {
     </section>
   );
 }
-
-function sessionStorageGet(k: string) { try { return sessionStorage.getItem(k); } catch { return null; } }
-function sessionStorageSet(k: string) { try { sessionStorage.setItem(k, '1'); } catch { /* private mode */ } }
 
 /* ---------- 03 mint diagram: cycles the seven coins ---------- */
 function useMintCycle() {

@@ -32,7 +32,7 @@
 .panel { background: var(--raised); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .panelRail { position: relative; }
 .hb { position: absolute; left: 0; bottom: -1px; height: 1px; background: var(--signal); }
-.ring { position: absolute; left: 50%; top: 8px; width: 120px; height: 120px; margin-left: -60px; pointer-events: none; transition: opacity 500ms var(--ease), transform 600ms var(--ease); }
+.ring { position: absolute; left: 50%; top: 8px; width: 120px; height: 120px; margin-left: -60px; pointer-events: none; transition: opacity 700ms var(--ease), transform 900ms var(--ease); }
 .ring svg { display: block; }
 .panelFoot { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
 .footLink { font-family: var(--sans); font-size: 15px; text-decoration: underline; }
