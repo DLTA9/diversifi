@@ -184,7 +184,6 @@ export default async function Home() {
             <div className={s.finalGrid}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <span className="label">ONE TOKEN · SEVEN STABLECOINS UNDERNEATH</span>
-                <Link href="/app" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>open app</Link>
                 <nav aria-label="resources" className={s.resLinks}>
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
