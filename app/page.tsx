@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
-import { IssuerVisual, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
+import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
 import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
@@ -120,30 +120,23 @@ export default async function Home() {
               <div className={s.ifLeft}>
                 <h2 className="h2s">one issuer breaks. it only touches its slice.</h2>
                 <p className="small dim pretty">Contained, not prevented. Four contract steps, none automatic.</p>
-                <IssuerVisual />
                 <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary" style={{ alignSelf: 'flex-start', marginTop: 8 }}>read the docs ↗</a>
               </div>
-              <div className={s.ifRight}>
-                <div>
-                  <div className={s.groupHead}><span>IN A FAILURE · 4 STEPS</span><span className="dim">NONE AUTOMATIC</span></div>
-                  {STEPS.map((st, i) => (
-                    <div key={i} data-step={i} className={s.step}>
-                      <span className={s.stepNum}>0{i + 1}</span>
-                      <div className={s.stepIcon}>{st.icon}</div>
-                      <div className={s.stepText}><h3 className={s.stepTitle}>{st.title}</h3><p className={s.stepBody}>{st.body}</p></div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className={s.groupHead}><span>ALWAYS ON · 4 SAFEGUARDS</span><span className="dim">FROM THE DOCS</span></div>
-                  {GUARDS.map((g, i) => (
-                    <div key={i} className={`${s.step} ${s.guard}`}>
+              <IssuerExplainer />
+            </div>
+            <div className={s.guards}>
+              <div className={s.groupHead}><span>ALWAYS ON · 4 SAFEGUARDS</span><span className="dim">FROM THE DOCS</span></div>
+              <div className={s.guardGrid}>
+                {GUARDS.map((g, i) => (
+                  <div key={i} className={s.guard}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+                      <div aria-hidden="true" className={s.mini}>{g.icon}</div>
                       <span className={s.stepNum}>{'ABCD'[i]}</span>
-                      <div className={s.stepIcon}><div aria-hidden="true" className={s.mini}>{g.icon}</div></div>
-                      <div className={s.stepText}><h3 className={s.guardTitle}>{g.title}</h3><p className={s.stepBody}>{g.body}</p></div>
                     </div>
-                  ))}
-                </div>
+                    <h3 className={s.guardTitle}>{g.title}</h3>
+                    <p className={s.stepBody}>{g.body}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -205,45 +198,8 @@ export default async function Home() {
   );
 }
 
-/* ---------- section 05 glyphs (div-built, aria-hidden) ---------- */
-const Bar = ({ flex, h, crit = 3 }: { flex: number[]; h: number; crit?: number }) => (
-  <div className={s.gbar} style={{ height: h }}>{flex.map((f, i) => <i key={i} className={i === crit ? s.c : undefined} style={{ flex: f }} />)}</div>
-);
+/* ---------- section 05 safeguard glyphs (div-built, aria-hidden) ---------- */
 const EVEN7 = [1, 1, 1, 1, 1, 1, 1];
-const LATER = [1.1, 1.1, 1.1, 0.3, 1.1, 1.1, 1.1];
-
-const STEPS = [
-  {
-    title: 'the loss stays in its slice.',
-    body: 'A failing coin affects only its share of the backing. The other six coins sit in the reserve as before.',
-    icon: (
-      <div aria-hidden="true" className={s.glyph}>
-        <Bar flex={EVEN7} h={28} />
-        <div style={{ display: 'flex', gap: 2 }}><i style={{ flex: 3 }} /><span style={{ flex: 4, display: 'flex', flexDirection: 'column', gap: 6 }}><i style={{ display: 'block', width: 2, height: 10, background: 'var(--dim)' }} /><span className="mono" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.02em', color: 'var(--crit)', whiteSpace: 'nowrap' }}>ONE ISSUER FAILS</span></span></div>
-      </div>
-    ),
-  },
-  {
-    title: 'its target is set to 0%.',
-    body: "The failing coin's target share can be set to 0%. The other six targets take up its share.",
-    icon: <div aria-hidden="true" className={s.glyphGrid}><span>TARGET</span><Bar flex={[1, 1, 1, 1, 1, 1]} h={20} crit={-1} /><span>NOW</span><Bar flex={EVEN7} h={20} /></div>,
-  },
-  {
-    title: 'swaps only run toward target.',
-    body: 'Each swap moves the reserve closer to the new target, so the failing coin is pushed out over time.',
-    icon: <div aria-hidden="true" className={s.glyphGrid}><span>BEFORE</span><Bar flex={EVEN7} h={20} /><span>LATER</span><Bar flex={LATER} h={20} /></div>,
-  },
-  {
-    title: 'minting can be paused.',
-    body: 'New mints can be stopped while the failing coin is still in the reserve.',
-    icon: (
-      <div aria-hidden="true" className={s.glyph} style={{ gap: 12 }}>
-        <span className="chip chip-sm" style={{ alignSelf: 'flex-start' }}><i className={s.pauseSq} />MINT · PAUSED</span>
-        <div style={{ opacity: 0.55 }}><Bar flex={LATER} h={20} /></div>
-      </div>
-    ),
-  },
-];
 
 const blk = (h: number, bg = 'var(--strong)', extra?: React.CSSProperties) => ({ height: h, background: bg, ...extra });
 

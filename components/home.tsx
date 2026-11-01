@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { COINS, coinUrl, FOOTNOTE, rmUrl } from '@/lib/coins';
 import { fmtBlock, fmtK, hhmm } from '@/lib/reserve';
 import { ReserveBar } from './ReserveBar';
 import { useReserve } from './ReserveProvider';
-import { ARCS } from './brand';
+import { ARCS, TokenIcon } from './brand';
 import s from '@/app/home.module.css';
 
 const reduced = () => typeof window !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -215,32 +215,28 @@ export function ReserveSection() {
           THIS READING IS {ageMin} MIN OLD <button type="button" className="mini-btn" onClick={refresh}>refresh</button>
         </p>
       )}
-      <div style={{ marginTop: 64 }}><ReserveBar size="lg" readout showTotal /></div>
 
       <div className={s.tableWide}>
         <div role="table" aria-label="reserve composition" className={s.table}>
           <div role="row" className={`${s.tr} ${s.th}`}>
             <span role="columnheader">COIN</span><span role="columnheader">ISSUER</span>
-            <span role="columnheader" className={s.r}>TARGET</span><span role="columnheader" className={s.r}>CURRENT</span>
-            <span role="columnheader" className={s.r}>HELD</span><span role="columnheader" className={s.r}>SOURCE</span>
+            <span role="columnheader" className={s.r}>HELD</span><span role="columnheader" className={s.r}>SHARE</span>
+            <span role="columnheader" className={s.r}>SOURCE</span>
           </div>
           {rows.map(c => (
             <div role="row" key={c.t} className={s.tr}>
               <span role="cell" className={s.coinCell}><i className="sw" style={{ background: c.color }} />{c.t}</span>
               <span role="cell" className={s.issuer}>{c.issuer}</span>
-              <a role="cell" href={c.url} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} style={{ color: 'var(--dim)' }} tabIndex={-1}>{c.d.target.toFixed(1)}%</a>
-              <a role="cell" href={c.url} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} style={{ fontWeight: 600 }} tabIndex={-1}>{c.d.current.toFixed(1)}%</a>
-              <a role="cell" href={c.url} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} tabIndex={-1}>{fmtK(c.d.held)}</a>
+              <a role="cell" href={c.url} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} style={{ fontWeight: 600 }} tabIndex={-1}>{fmtK(c.d.held)}</a>
+              <a role="cell" href={c.url} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} style={{ color: 'var(--dim)' }} tabIndex={-1}>{c.d.current.toFixed(1)}%</a>
               <a role="cell" href={c.url} target="_blank" rel="noopener" aria-label={c.aria} className={`${s.r} ${s.src}`}>balance →</a>
             </div>
           ))}
           <div role="row" className={`${s.tr} ${s.total}`}>
             <span role="cell" className="label">TOTAL</span>
-            {/* TODO(open item 5): confirm "six issuers" with compliance; prototype read "Diversifi". */}
-            <span role="cell" className={s.issuer}>six issuers</span>
-            <span role="cell" className={s.r} style={{ color: 'var(--dim)' }}>100.0%</span>
-            <span role="cell" className={s.r} style={{ fontWeight: 600 }}>100.0%</span>
+            <span role="cell" className={s.issuer} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg)' }}><TokenIcon size={16} />DiversiFi</span>
             <a role="cell" href={rmUrl} target="_blank" rel="noopener" className={`${s.r} ${s.cellLink}`} style={{ fontWeight: 600 }} tabIndex={-1}>{fmtK(reading.total)}</a>
+            <span role="cell" className={s.r} style={{ color: 'var(--dim)' }}>100.0%</span>
             <a role="cell" href={rmUrl} target="_blank" rel="noopener" aria-label="ReserveManagerV1 on Etherscan" className={`${s.r} ${s.src}`}>ReserveManagerV1 →</a>
           </div>
         </div>
@@ -251,13 +247,13 @@ export function ReserveSection() {
           <div role="listitem" key={c.t} className={s.nRow}>
             <div className={s.nTop}>
               <span className={s.nCoin}><i className="sw" style={{ background: c.color }} />{c.t}<span className={s.nIssuer}>{c.issuer}</span></span>
-              <span style={{ fontSize: 17, fontWeight: 600 }}>{c.d.current.toFixed(1)}%</span>
+              <span style={{ fontSize: 17, fontWeight: 600 }}>{fmtK(c.d.held)}</span>
             </div>
             <span aria-hidden="true" className={s.nBar}><i style={{ width: `${(c.d.current / max) * 100}%`, background: c.color }} /></span>
-            <div className={s.nFoot}><span>target {c.d.target.toFixed(1)}% · held {fmtK(c.d.held)}</span><a href={c.url} target="_blank" rel="noopener" aria-label={c.aria}>balance →</a></div>
+            <div className={s.nFoot}><a href={c.url} target="_blank" rel="noopener" aria-label={c.aria}>balance →</a></div>
           </div>
         ))}
-        <div className={s.nTotal}><span className="label">TOTAL · 100.0%</span><span style={{ fontWeight: 600 }}>{fmtK(reading.total)}</span></div>
+        <div className={s.nTotal}><span className="label">TOTAL</span><span style={{ fontWeight: 600 }}>{fmtK(reading.total)}</span></div>
       </div>
 
       <p className="foot" style={{ marginTop: 24, maxWidth: '60em' }}>Shares are rounded to one decimal by largest remainder, so they total 100. {FOOTNOTE}</p>
@@ -265,65 +261,78 @@ export function ReserveSection() {
   );
 }
 
-/* ---------- 05 scroll-driven explainer visual ---------- */
-export function useScrollStep() {
+/* ---------- 05 issuer-fails explainer: animation is the main element ---------- */
+const FAIL_STEPS = [
+  { title: 'the loss stays in its slice.', body: 'A failing coin affects only its share of the backing. The other six coins sit in the reserve as before.', short: 'The loss stays in its slice. The other six are untouched.' },
+  { title: 'its target is set to 0%.', body: "The failing coin's target share can be set to 0%. The other six targets take up its share.", short: 'Its target is set to 0%. The other six take up its share.' },
+  { title: 'swaps only run toward target.', body: 'Each swap moves the reserve closer to the new target, so the failing coin is pushed out over time.', short: 'Swaps only run toward target, pushing the coin out.' },
+  { title: 'minting can be paused.', body: 'New mints can be stopped while the failing coin is still in the reserve.', short: 'New mints can pause while the coin is still held.' },
+];
+const STEP_MS = 3200;
+
+export function IssuerExplainer() {
   const [step, setStep] = useState(0);
+  const [run, setRun] = useState(0);
+  const root = useRef<HTMLDivElement>(null);
+
+  // Autoplay 01→04 and loop while in view; a click jumps to that step and the loop carries on from there.
+  // Reduced motion: end state, no loop.
   useEffect(() => {
     if (reduced()) { setStep(3); return; }
-    const on = () => {
-      const rows = document.querySelectorAll('[data-step]');
-      const line = window.innerHeight * 0.45;
-      let st = 0;
-      rows.forEach((r, i) => { if (r.getBoundingClientRect().top < line) st = i; });
-      setStep(st);
-    };
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    window.addEventListener('resize', on);
-    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on); };
-  }, []);
-  return step;
-}
+    let iv = 0;
+    const io = new IntersectionObserver(([e]) => {
+      clearInterval(iv);
+      if (e.isIntersecting) iv = window.setInterval(() => setStep(st => (st + 1) % 4), STEP_MS);
+    }, { threshold: 0.4 });
+    io.observe(root.current!);
+    return () => { io.disconnect(); clearInterval(iv); };
+  }, [run]);
 
-export function IssuerVisual() {
-  const step = useScrollStep();
+  const pick = (i: number) => { setStep(i); setRun(r => r + 1); };
+
   return (
-    <>
-      <style>{`[data-step]{transition:opacity 700ms}` + [1, 2, 3].map(i => `[data-step="${i}"]{opacity:${step >= i ? 1 : 0.4}}`).join('')}</style>
-      <div aria-hidden="true" className={s.ifBox}>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[0, 1, 2, 3].map(i => {
-            const col = i <= step ? 'var(--fg)' : 'var(--strong)';
-            return (
-              <span key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <i style={{ display: 'block', height: 2, background: col, transition: 'background-color 700ms' }} />
-                <span className="mono" style={{ fontSize: 11, color: col, transition: 'color 700ms' }}>0{i + 1}</span>
-              </span>
-            );
-          })}
-        </div>
-        <div className={s.ifGrid}>
+    <div ref={root} className={s.ex}>
+      <div className={s.exRail}><span style={{ color: 'var(--crit)' }}>ONE ISSUER FAILS</span><span className="dim">NONE AUTOMATIC</span></div>
+
+      <div role="tablist" aria-label="failure steps" className={s.exTabs}>
+        {FAIL_STEPS.map((st, i) => (
+          <button key={i} type="button" role="tab" aria-selected={i === step} aria-controls="ex-caption" onClick={() => pick(i)}
+            className={i < step ? s.exDone : i === step ? s.exOn : undefined}>
+            <span className={s.exLine} aria-hidden="true">
+              {i === step && <i key={`${step}-${run}`} className={s.exProg} style={{ animationDuration: `${STEP_MS}ms` }} />}
+            </span>
+            <span className={s.exNum}>0{i + 1}</span>
+            <span className={s.exTab}>{st.title}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className={s.exFig}>
+        <div aria-hidden="true" className={s.ifGrid}>
           <span>NOW</span>
-          <div className={s.ifBar} style={{ height: 24, opacity: step >= 3 ? 0.6 : 1, transition: 'opacity 900ms' }}>
+          <div className={s.ifBar} style={{ height: 40, opacity: step >= 3 ? 0.6 : 1, transition: 'opacity 900ms' }}>
             {Array.from({ length: 7 }, (_, i) => (
               <i key={i} style={{ flex: step >= 2 ? (i === 3 ? '0.2 1 0px' : '1.13 1 0px') : '1 1 0px', background: i === 3 ? 'var(--crit)' : 'var(--strong)', transition: 'flex-grow 1600ms cubic-bezier(.45,0,.2,1)' }} />
             ))}
           </div>
           <span style={{ opacity: step >= 1 ? 1 : 0.15, transition: 'opacity 900ms' }}>TARGET</span>
-          <div className={s.ifBar} style={{ height: 12, opacity: step >= 1 ? 1 : 0.15, transition: 'opacity 900ms' }}>
+          <div className={s.ifBar} style={{ height: 16, opacity: step >= 1 ? 1 : 0.15, transition: 'opacity 900ms' }}>
             {Array.from({ length: 7 }, (_, i) => (
               <i key={i} style={{ flex: step >= 1 && i === 3 ? '0 1 0px' : '1 1 0px', background: 'var(--strong)', transition: 'flex-grow 1300ms cubic-bezier(.45,0,.2,1)' }} />
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, minHeight: 28 }}>
-          <span className="mono" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.02em', color: 'var(--crit)' }}>ONE ISSUER FAILS</span>
-          <span className="chip chip-sm" style={{ opacity: step >= 3 ? 1 : 0, transform: step >= 3 ? 'scale(1)' : 'scale(1.35)', transition: 'opacity 500ms, transform 700ms cubic-bezier(.2,1.4,.4,1)' }}>
+        <div className={s.exSayRow}>
+          <p id="ex-caption" role="tabpanel" aria-live="polite" key={step} className={s.exSay}>{FAIL_STEPS[step].short}</p>
+          <span aria-hidden="true" className="chip chip-sm" style={{ flexShrink: 0, opacity: step >= 3 ? 1 : 0, transform: step >= 3 ? 'scale(1)' : 'scale(1.35)', transition: 'opacity 500ms, transform 700ms cubic-bezier(.2,1.4,.4,1)' }}>
             <i className={s.pauseSq} />MINT · PAUSED
           </span>
         </div>
       </div>
-    </>
+
+      {/* All four steps in the HTML for crawlers and screen readers; the caption above shows one at a time. */}
+      <ol className="sr-only">{FAIL_STEPS.map((st, i) => <li key={i}>{st.title} {st.body}</li>)}</ol>
+    </div>
   );
 }
 
