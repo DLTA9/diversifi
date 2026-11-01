@@ -5,12 +5,11 @@ import { rpcTransport } from './reserve';
 
 const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
-// TODO(open item 4): confirm the supported wallet list.
+// WalletConnect is always listed; without NEXT_PUBLIC_WC_PROJECT_ID its row is disabled.
 export const WALLETS = [
-  { id: 'metaMask', name: 'MetaMask', kind: 'BROWSER' },
-  { id: 'rabby', name: 'Rabby', kind: 'BROWSER' },
-  { id: 'coinbaseWalletSDK', name: 'Coinbase Wallet', kind: 'APP' },
-  ...(wcProjectId ? [{ id: 'walletConnect', name: 'WalletConnect', kind: 'QR' }] : []),
+  { id: 'metaMask', name: 'MetaMask', kind: 'BROWSER', ready: true },
+  { id: 'walletConnect', name: 'WalletConnect', kind: 'QR', ready: !!wcProjectId },
+  { id: 'coinbaseWalletSDK', name: 'Coinbase Wallet', kind: 'APP', ready: true },
 ] as const;
 
 export const wagmiConfig = createConfig({
@@ -19,16 +18,6 @@ export const wagmiConfig = createConfig({
   multiInjectedProviderDiscovery: false,
   connectors: [
     injected({ target: 'metaMask' }),
-    injected({
-      target: {
-        id: 'rabby',
-        name: 'Rabby',
-        provider: w => {
-          const eth = (w as unknown as { ethereum?: { isRabby?: boolean } })?.ethereum;
-          return eth?.isRabby ? (eth as never) : undefined;
-        },
-      },
-    }),
     coinbaseWallet({ appName: 'DiversiFi', appLogoUrl: 'https://diversifi.tech/app-icon-512.png' }),
     ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true, metadata: { name: 'DiversiFi', description: 'Mint and redeem DFiUSD', url: 'https://diversifi.tech', icons: [] } })] : []),
   ],
