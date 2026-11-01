@@ -9,7 +9,7 @@ import s from './home.module.css';
 // Static pre-render, re-read from chain at most once a minute (ISR) so crawlers see current figures.
 export const revalidate = 60;
 
-// TODO(open item 4): CertiK date, findings and report link. Flip once the report is public.
+// TODO(open item 4): CertiK findings and report link. Flip once the report is public.
 const CERTIK_PUBLIC = true;
 
 export default async function Home() {
@@ -32,10 +32,10 @@ export default async function Home() {
           <Crops />
           <div className={`wrap ${s.heroIn}`}>
             <div className={s.heroL}>
-              {/* TODO(open item 3): compliance review of eyebrow, "1:1" and "so no single issuer can sink it". */}
+              {/* TODO(open item 3): compliance review of eyebrow, "1:1" and "no single issuer can sink it". */}
               <p className="label">THE PREFERRED RESERVE ASSET</p>
               <h1 className="h1">structured stability.</h1>
-              <p className="dim pretty" style={{ maxWidth: '34em' }}>Every DFiUSD is backed 1:1 by a basket of seven USD stablecoins, so no single issuer can sink it.</p>
+              <p className="dim pretty" style={{ maxWidth: '34em' }}>Every DFiUSD is backed 1:1 by a basket of diversified USD stablecoins, no single issuer can sink it.</p>
               <div className={s.ctaRow}>
                 <Link href="/app" className="btn btn-primary">open app</Link>
                 <a href="#reserve" className="btn btn-secondary">check reserves</a>
@@ -46,8 +46,8 @@ export default async function Home() {
                   <p className="pretty" style={{ fontSize: 16, lineHeight: 1.4 }}>of all stablecoin supply still sits with one issuer. DFiUSD spreads its backing across seven.</p>
                 </div>
                 <MarketMorph />
-                {/* TODO(open item 4): source name. */}
-                <span className={s.source}>Q3 2026 · 195 STABLECOINS · 152 ISSUERS · SOURCE: [NAME]</span>
+                {/* TODO(open item 4): name the source for these figures if it should be shown. */}
+                <span className={s.source}>Q3 2026 · 195 STABLECOINS · 152 ISSUERS</span>
               </div>
             </div>
             <ReservePanel />
@@ -115,17 +115,17 @@ export default async function Home() {
         {/* 05 IF AN ISSUER FAILS */}
         <section id="issuer-fails" aria-label="if an issuer fails" className={s.band}>
           <div className={`wrap ${s.bandIn}`}>
-            <div className="rail"><span>05 · IF AN ISSUER FAILS</span><span>EXPLAINER · ILLUSTRATIVE SPLIT</span></div>
+            <div className="rail"><span>05 · IF AN ISSUER FAILS</span></div>
             <div className={s.ifLayout}>
               <div className={s.ifLeft}>
                 <h2 className="h2s">one issuer breaks. it only touches its slice.</h2>
-                <p className="small dim pretty">Contained, not prevented. Four contract steps, none automatic.</p>
+                <p className="small dim pretty">Contained, not prevented. Four contract steps.</p>
                 <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary" style={{ alignSelf: 'flex-start', marginTop: 8 }}>read the docs ↗</a>
               </div>
               <IssuerExplainer />
             </div>
             <div className={s.guards}>
-              <div className={s.groupHead}><span>ALWAYS ON · 4 SAFEGUARDS</span><span className="dim">FROM THE DOCS</span></div>
+              <div className={s.groupHead}><span>ALWAYS ON · 4 SAFEGUARDS</span></div>
               <div className={s.guardGrid}>
                 {GUARDS.map((g, i) => (
                   <div key={i} className={s.guard}>
@@ -149,10 +149,10 @@ export default async function Home() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <h2 className="h2">reserves on-chain, verifiable anytime.</h2>
               {/* TODO(open item 2): disclose rebasing and maintainer freezing; "plain ERC-20" needs rewording. */}
-              <p className="dim pretty" style={{ maxWidth: '32em' }}>DFiUSD is a plain ERC-20 collateral asset that spreads issuer risk across seven coins. The token and ReserveManagerV1 are source-verified on Etherscan.</p>
+              <p className="dim pretty" style={{ maxWidth: '32em' }}>DFiUSD is an ERC-20 collateral asset that spreads issuer risk. The token and ReserveManagerV1 are audited and source-verified on Etherscan.</p>
               <div className={s.ctaRow}>
                 <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary">read the docs ↗</a>
-                <a href={CONTACT_MAIL} className="btn btn-secondary">talk to us</a>
+                <a href={CONTACT_MAIL} className="btn btn-secondary">let&apos;s meet</a>
               </div>
             </div>
             <dl className={s.dl}>
@@ -162,7 +162,7 @@ export default async function Home() {
               <div><dt>LIVE SINCE</dt><dd><span>Sep 2025</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx →</a></dd></div>
               <div><dt>SOURCE</dt><dd>verified on Etherscan</dd></div>
               {/* TODO(open item 4): link both audit reports once public. */}
-              <div><dt>AUDITS</dt><dd><span>Nethermind · 20 Aug 2025</span>{CERTIK_PUBLIC && <span>CertiK · [date]</span>}</dd></div>
+              <div><dt>AUDITS</dt><dd>{CERTIK_PUBLIC ? 'Nethermind & CertiK' : 'Nethermind'}</dd></div>
               <div><dt>DECIMALS</dt><dd>18</dd></div>
             </dl>
           </div>

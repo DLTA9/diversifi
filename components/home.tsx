@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { COINS, coinUrl, FOOTNOTE, rmUrl } from '@/lib/coins';
+import { COINS, coinUrl, rmUrl } from '@/lib/coins';
 import { fmtBlock, fmtK, hhmm } from '@/lib/reserve';
 import { ReserveBar } from './ReserveBar';
 import { useReserve } from './ReserveProvider';
@@ -255,8 +255,6 @@ export function ReserveSection() {
         ))}
         <div className={s.nTotal}><span className="label">TOTAL</span><span style={{ fontWeight: 600 }}>{fmtK(reading.total)}</span></div>
       </div>
-
-      <p className="foot" style={{ marginTop: 24, maxWidth: '60em' }}>Shares are rounded to one decimal by largest remainder, so they total 100. {FOOTNOTE}</p>
     </section>
   );
 }
@@ -292,7 +290,7 @@ export function IssuerExplainer() {
 
   return (
     <div ref={root} className={s.ex}>
-      <div className={s.exRail}><span style={{ color: 'var(--crit)' }}>ONE ISSUER FAILS</span><span className="dim">NONE AUTOMATIC</span></div>
+      <div className={s.exRail}><span style={{ color: 'var(--crit)' }}>ONE ISSUER FAILS</span></div>
 
       <div role="tablist" aria-label="failure steps" className={s.exTabs}>
         {FAIL_STEPS.map((st, i) => (
@@ -366,7 +364,7 @@ export function Signup() {
             <button type="submit" className={`btn btn-secondary ${s.subBtn}`} disabled={state === 'sending'}>subscribe</button>
           </div>
           {err && <p id="signup-err" role="alert" style={{ fontSize: 14, color: 'var(--crit)' }}>enter a valid email address.</p>}
-          <p style={{ fontSize: 14 }} className="dim">One email a month: the split, the total and the block it was read at.</p>
+          <p style={{ fontSize: 14 }} className="dim">Stay news-pegged: reserve updates, launches and what&apos;s next, about once a month.</p>
         </>
       ) : (
         <p role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 48, fontSize: 17 }}><i className="dot" style={{ background: 'var(--ok)' }} />you&apos;re on the list for the monthly reserve reading.</p>
