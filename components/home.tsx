@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { COINS, coinUrl, rmUrl, TOKEN_ADDR, tokenUrl } from '@/lib/coins';
+import { COINS, coinUrl, rmUrl } from '@/lib/coins';
 import { fmtBlock, fmtK, hhmm } from '@/lib/reserve';
 import { ReserveBar } from './ReserveBar';
 import { useReserve } from './ReserveProvider';
@@ -338,33 +338,41 @@ export function IssuerExplainer() {
   );
 }
 
-/* ---------- 06 token address: full, copyable, Etherscan link ---------- */
-export function TokenAddress() {
+/* ---------- 06 contract row: name, meta, address, copy, Etherscan ---------- */
+const CopyIcon = () => <svg viewBox="0 0 16 16" width={15} height={15} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4}><rect x={5.5} y={5.5} width={8} height={8} rx={1.5} /><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" /></svg>;
+const CheckIcon = () => <svg viewBox="0 0 16 16" width={15} height={15} aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="var(--ok)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></svg>;
+
+export function ContractRow({ name, meta, address, href, token = false }: { name: string; meta: string; address: string; href: string; token?: boolean }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const copy = async () => {
-    try { await navigator.clipboard.writeText(TOKEN_ADDR); } catch { return; }
+    try { await navigator.clipboard.writeText(address); } catch { return; }
     setCopied(true);
     clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setCopied(false), 1600);
   };
 
   return (
-    <span className={s.addr}>
-      <TokenIcon size={16} />
-      <span className={s.addrText}>{TOKEN_ADDR}</span>
-      <button type="button" onClick={copy} className={s.copyBtn} aria-label={copied ? 'address copied' : 'copy DFiUSD token address'} title={copied ? 'copied' : 'copy address'}>
-        {copied ? (
-          <svg viewBox="0 0 16 16" width={14} height={14} aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="var(--ok)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></svg>
-        ) : (
-          <svg viewBox="0 0 16 16" width={14} height={14} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4}><rect x={5.5} y={5.5} width={8} height={8} rx={1.5} /><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" /></svg>
-        )}
-      </button>
-      <span role="status" className="sr-only">{copied ? 'address copied' : ''}</span>
-      <a href={tokenUrl} target="_blank" rel="noopener" aria-label="DFiUSD token on Etherscan" className={s.addrLink}>→</a>
-    </span>
+    <div className={s.ct}>
+      <div className={s.ctHead}>
+        <span className={s.ctName}>{token && <TokenIcon size={16} />}{name}</span>
+        <span className={s.ctMeta}>{meta}</span>
+      </div>
+      <div className={s.ctAddr}>
+        {/* Full address where it fits; a middle-shortened one on phones. Copy always takes the full address. */}
+        <span className={s.ctFull}>{address}</span>
+        <span className={s.ctShort} aria-hidden="true">{address.slice(0, 10)}…{address.slice(-8)}</span>
+        <span className={s.ctBtns}>
+          <button type="button" onClick={copy} className={s.iconBtn} aria-label={copied ? `${name} address copied` : `copy ${name} address`} title={copied ? 'copied' : 'copy address'}>
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </button>
+          <a href={href} target="_blank" rel="noopener" className={`${s.iconBtn} ${s.extLink}`} aria-label={`${name} on Etherscan`} title="view on Etherscan">↗</a>
+        </span>
+        <span role="status" className="sr-only">{copied ? 'address copied' : ''}</span>
+      </div>
+    </div>
   );
 }
 

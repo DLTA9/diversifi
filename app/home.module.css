@@ -144,17 +144,28 @@
 
 /* ---------- 06 integrators ---------- */
 .intGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 40px 64px; margin-top: 40px; }
-.dl { margin: 0; font-family: var(--mono); font-size: 14px; border-top: 1px solid var(--strong); }
-.dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.dl dt { font-size: 13px; font-weight: 500; letter-spacing: .02em; color: var(--dim); }
-.dl dd { margin: 0; display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-end; color: var(--fg); }
-.dl dd a { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
-.addr { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
-.addrText { font-size: 13px; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.copyBtn { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; margin: -12px 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--dim); cursor: pointer; transition: color 160ms, border-color 160ms; }
-.copyBtn:hover { color: var(--fg); border-color: var(--strong); }
-.addrLink { flex: none; display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; margin: -12px -12px -12px 0; font-size: 15px; text-decoration: none; color: var(--signal); }
-.addrLink:hover { opacity: .75; }
+.ints { display: flex; flex-direction: column; border-top: 1px solid var(--strong); font-family: var(--mono); }
+/* contract rows: name + meta on one line, address + actions on the next */
+.ct { display: flex; flex-direction: column; gap: 6px; padding: 18px 0 14px; border-bottom: 1px solid var(--line); }
+.ctHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ctName { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; color: var(--fg); }
+.ctMeta { font-size: 11px; font-weight: 500; letter-spacing: .04em; color: var(--dim); }
+.ctAddr { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.ctFull, .ctShort { flex: 1; min-width: 0; font-size: 13px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.ctShort { display: none; }
+@media (max-width: 520px) { .ctFull { display: none; } .ctShort { display: block; } }
+.ctBtns { display: flex; flex: none; margin-right: -10px; }
+.iconBtn { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dim); cursor: pointer; text-decoration: none; transition: color 160ms, background-color 160ms; }
+.iconBtn:hover, .iconBtn:focus-visible { color: var(--signal); background: var(--raised); }
+/* the Etherscan arrow matches the text links below it (deployment tx ↗, Nethermind ↗) */
+.extLink { font-size: 14px; color: var(--signal); }
+/* plain facts: label left, value right, one line each */
+.dl { margin: 0; font-size: 14px; }
+.dl > div { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; min-height: 56px; border-bottom: 1px solid var(--line); }
+.dl dt { font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--dim); }
+.dl dd { margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; color: var(--fg); }
+.dl dd a { display: inline-flex; align-items: center; min-height: 44px; color: var(--signal); text-decoration: none; }
+.dl dd a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---------- 07 final CTA ---------- */
 .final { margin-top: 104px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

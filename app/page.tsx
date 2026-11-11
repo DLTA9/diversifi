@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
-import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, TokenAddress } from '@/components/home';
+import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, ContractRow } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
@@ -182,15 +182,16 @@ export default async function Home() {
                 <a href={CONTACT_MAIL} className="btn btn-secondary">let&apos;s meet</a>
               </div>
             </div>
-            <dl className={s.dl}>
-              <div><dt>TOKEN</dt><dd><TokenAddress /></dd></div>
-              <div><dt>RESERVE CONTRACT</dt><dd><span>ReserveManagerV1</span><a href={rmUrl} target="_blank" rel="noopener" aria-label="ReserveManagerV1 on Etherscan">0x8978…8327 →</a></dd></div>
-              <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
-              <div><dt>LIVE SINCE</dt><dd><span>Sep 2025</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx →</a></dd></div>
-              <div><dt>SOURCE</dt><dd>verified on Etherscan</dd></div>
-              {/* TODO(open item 4): link the CertiK report once public. */}
-              <div><dt>AUDITS</dt><dd><span><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a>{CERTIK_PUBLIC && ' & CertiK'}</span></dd></div>
-            </dl>
+            <div className={s.ints}>
+              <ContractRow token name="DFiUSD" meta="ERC-20" address={TOKEN_ADDR} href={tokenUrl} />
+              <ContractRow name="ReserveManagerV1" meta="RESERVE" address={RM_ADDR} href={rmUrl} />
+              <dl className={s.dl}>
+                <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
+                <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
+                {/* TODO(open item 4): link the CertiK report once public. */}
+                <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a>{CERTIK_PUBLIC && <><span className="dim">·</span>CertiK</>}</dd></div>
+              </dl>
+            </div>
           </div>
         </section>
 
