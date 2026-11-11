@@ -71,12 +71,15 @@ export default async function Faq() {
               <Link href="/">home</Link>
               <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
               <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
-              <Link href={TERMS_URL}>terms of service</Link>
               <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
             </nav>
             <div className={shell.sign}>
               <Wordmark size={21} mark={24} />
               <span className="mono dim" style={{ fontSize: 13 }}>© 2026 DiversiFi</span>
+              <nav aria-label="legal" className={shell.legal}>
+                <Link href="/faq">faq</Link>
+                <Link href={TERMS_URL}>terms of service</Link>
+              </nav>
             </div>
           </div>
         </footer>

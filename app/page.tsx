@@ -205,14 +205,16 @@ export default async function Home() {
                 <span className="label">ONE TOKEN · SEVEN STABLECOINS UNDERNEATH</span>
                 <nav aria-label="resources" className={s.resLinks}>
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
-                  <Link href="/faq">faq</Link>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
-                  <Link href={TERMS_URL}>terms of service</Link>
                   <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
                 </nav>
                 <footer className={s.sign}>
                   <Wordmark size={21} mark={24} />
                   <span className="mono dim" style={{ fontSize: 13 }}>© 2026 DiversiFi</span>
+                  <nav aria-label="legal" className={s.legal}>
+                    <Link href="/faq">faq</Link>
+                    <Link href={TERMS_URL}>terms of service</Link>
+                  </nav>
                 </footer>
               </div>
               <Signup />

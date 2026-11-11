@@ -173,3 +173,6 @@
 
 /* wordmark + copyright, closing the final CTA (there is no separate page footer) */
 .sign { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.legal { display: flex; flex-wrap: wrap; gap: 0 20px; font-family: var(--mono); font-size: 13px; }
+.legal a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; color: var(--dim); text-decoration: none; }
+.legal a:hover { color: var(--fg); }

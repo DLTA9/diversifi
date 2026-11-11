@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Crops, Wordmark } from '@/components/brand';
-import { DOCS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { og } from '@/lib/site';
 import content from './content.json';
 import s from './terms.module.css';
@@ -99,13 +99,16 @@ export default function Terms() {
             <nav aria-label="resources" className={s.links}>
               <Link href="/">home</Link>
               <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
-              <Link href="/faq">faq</Link>
               <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
               <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
             </nav>
             <div className={s.sign}>
               <Wordmark size={21} mark={24} />
               <span className="mono dim" style={{ fontSize: 13 }}>© 2026 DiversiFi</span>
+              <nav aria-label="legal" className={s.legal}>
+                <Link href="/faq">faq</Link>
+                <Link href={TERMS_URL}>terms of service</Link>
+              </nav>
             </div>
           </div>
         </footer>
