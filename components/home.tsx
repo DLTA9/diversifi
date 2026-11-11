@@ -203,7 +203,6 @@ export function ReserveSection() {
     stale: `ETHEREUM · AS OF ${t} UTC · BLOCK ${blk}`,
     unavailable: `ETHEREUM · LAST READING ${t} UTC`,
   }[mode];
-  const max = Math.max(...reading.coins.map(c => c.current));
   const rows = COINS.map((c, i) => ({ ...c, d: reading.coins[i], url: coinUrl(c), aria: `${c.t} held by the reserve, on Etherscan` }));
 
   return (
@@ -247,16 +246,18 @@ export function ReserveSection() {
 
       <div role="list" aria-label="reserve composition" className={`mono ${s.tableNarrow}`}>
         {rows.map(c => (
-          <div role="listitem" key={c.t} className={s.nRow}>
-            <div className={s.nTop}>
+          <div role="listitem" key={c.t}>
+            {/* One line per coin; the whole row links to the balance on Etherscan. */}
+            <a href={c.url} target="_blank" rel="noopener" aria-label={c.aria} className={s.nRow}>
               <span className={s.nCoin}><i className="sw" style={{ background: c.color }} />{c.t}<span className={s.nIssuer}>{c.issuer}</span></span>
-              <span style={{ fontSize: 17, fontWeight: 600 }}>{fmtK(c.d.held)}</span>
-            </div>
-            <span aria-hidden="true" className={s.nBar}><i style={{ width: `${(c.d.current / max) * 100}%`, background: c.color }} /></span>
-            <div className={s.nFoot}><a href={c.url} target="_blank" rel="noopener" aria-label={c.aria}>balance →</a></div>
+              <span className={s.nHeld}>{fmtK(c.d.held)}<span aria-hidden="true" className={s.nArrow}>↗</span></span>
+            </a>
           </div>
         ))}
-        <div className={s.nTotal}><span className="label">TOTAL</span><span style={{ fontWeight: 600 }}>{fmtK(reading.total)}</span></div>
+        <a href={rmUrl} target="_blank" rel="noopener" aria-label="ReserveManagerV1 on Etherscan" className={`${s.nRow} ${s.nTotal}`}>
+          <span className={s.nCoin}><TokenIcon size={14} />TOTAL</span>
+          <span className={s.nHeld}>{fmtK(reading.total)}<span aria-hidden="true" className={s.nArrow}>↗</span></span>
+        </a>
       </div>
     </section>
   );

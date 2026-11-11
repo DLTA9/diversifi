@@ -89,15 +89,14 @@
 .src { white-space: nowrap; font-family: var(--sans); color: var(--signal); }
 /* every linked cell fills its cell so the tap target is at least 44 px tall */
 .tr > a { display: flex; align-items: center; justify-content: flex-end; min-height: 44px; }
-.nRow { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.nTop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.nCoin { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; }
-.nIssuer { font-family: var(--sans); font-weight: 400; font-size: 14px; color: var(--dim); }
-.nBar { display: block; height: 6px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.nBar i { display: block; height: 100%; border-radius: 2px; }
-.nFoot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--dim); }
-.nFoot a { font-family: var(--sans); font-size: 14px; min-height: 44px; display: inline-flex; align-items: center; }
-.nTotal { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--strong); font-size: 15px; }
+.nRow { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); color: var(--fg); text-decoration: none; }
+.nRow:hover .nHeld, .nRow:focus-visible .nHeld { color: var(--signal); }
+.nCoin { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 500; font-size: 15px; }
+.nIssuer { font-family: var(--sans); font-weight: 400; font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nHeld { display: inline-flex; align-items: center; gap: 8px; flex: none; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nArrow { font-family: var(--sans); font-size: 12px; font-weight: 400; color: var(--dim); }
+.nTotal { border-bottom-color: var(--strong); }
+.nTotal .nCoin { font-size: 13px; letter-spacing: .02em; color: var(--dim); }
 
 /* ---------- 05 issuer fails ---------- */
 .band { margin-top: 104px; background: var(--raised); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); scroll-margin-top: 72px; }
