@@ -1,0 +1,48 @@
+/* ---------- nav (same as home) ---------- */
+.nav { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+.navIn { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.logo { text-decoration: none; color: var(--fg); }
+.logo:hover { color: var(--fg); }
+
+/* ---------- header ---------- */
+.head { border-bottom: 1px solid var(--line); }
+.headIn { padding-top: clamp(48px, 6vw, 96px); padding-bottom: clamp(40px, 5vw, 72px); display: flex; flex-direction: column; gap: 32px; }
+.intro { display: flex; flex-direction: column; gap: 16px; max-width: 68ch; font-size: 17px; line-height: 1.6; color: var(--dim); }
+
+/* ---------- body: sticky contents + reading column ---------- */
+.body { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 32px clamp(40px, 6vw, 96px); padding-top: 64px; padding-bottom: 120px; }
+.toc nav { position: sticky; top: 104px; display: flex; flex-direction: column; gap: 16px; }
+.toc ol { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.toc li a { display: flex; gap: 12px; align-items: baseline; min-height: 44px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.35; color: var(--dim); text-decoration: none; }
+.toc li a:hover, .toc li a:focus-visible { color: var(--fg); }
+.num { flex: none; font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.text { display: flex; flex-direction: column; gap: 64px; max-width: 36em; }
+.sec { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 96px; font-size: 16px; line-height: 1.7; color: var(--fg); }
+.sec p { margin: 0; overflow-wrap: anywhere; }
+.h { display: flex; gap: 16px; align-items: baseline; padding-bottom: 14px; border-bottom: 1px solid var(--strong); font-weight: 400; font-size: clamp(22px, 2.2vw, 28px); line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; }
+.h .num { font-size: 14px; }
+
+/* lettered sub-clauses, (a) (b) (c) */
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.list li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 4px; padding-left: 4px; }
+.li { font-family: var(--mono); font-size: 13px; color: var(--dim); padding-top: 3px; }
+
+/* conspicuous passages stay in capitals as published, set slightly heavier */
+.caps { font-weight: 500; color: var(--fg); }
+
+.text a { color: var(--signal); text-underline-offset: 3px; overflow-wrap: anywhere; }
+
+/* ---------- footer ---------- */
+.foot { border-top: 1px solid var(--line); }
+.footIn { padding-top: 40px; padding-bottom: 48px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; }
+.links { display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 15px; }
+.links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--fg); text-decoration: none; }
+.links a:hover { color: var(--signal); }
+.sign { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .body { grid-template-columns: 1fr; padding-top: 40px; }
+  .toc nav { position: static; }
+  .text { gap: 48px; }
+}

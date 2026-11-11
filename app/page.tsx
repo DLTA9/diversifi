@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, TokenAddress } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
 
@@ -57,7 +57,7 @@ export default async function Home() {
         {/* 02 PROOF */}
         <section aria-label="proof" className={s.proof}>
           <div className={`wrap ${s.proofGrid}`}>
-            <a href="#docs" className={s.proofCell}><span className="label">AUDITED BY</span><span>{CERTIK_PUBLIC ? 'NETHERMIND · CERTIK' : 'NETHERMIND · 20 AUG 2025'}</span></a>
+            <a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)" className={s.proofCell}><span className="label">AUDITED BY</span><span>{CERTIK_PUBLIC ? 'NETHERMIND · CERTIK ↗' : 'NETHERMIND ↗'}</span></a>
             <a href={rmUrl} target="_blank" rel="noopener" className={s.proofCell}><span className="label">LIVE SINCE</span><span>SEP 2025</span></a>
             <a href="#reserve" className={s.proofCell}><span className="label">RESERVES</span><span>ON-CHAIN, VIEWABLE ANY TIME</span></a>
           </div>
@@ -161,8 +161,8 @@ export default async function Home() {
               <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
               <div><dt>LIVE SINCE</dt><dd><span>Sep 2025</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx →</a></dd></div>
               <div><dt>SOURCE</dt><dd>verified on Etherscan</dd></div>
-              {/* TODO(open item 4): link both audit reports once public. */}
-              <div><dt>AUDITS</dt><dd>{CERTIK_PUBLIC ? 'Nethermind & CertiK' : 'Nethermind'}</dd></div>
+              {/* TODO(open item 4): link the CertiK report once public. */}
+              <div><dt>AUDITS</dt><dd><span><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a>{CERTIK_PUBLIC && ' & CertiK'}</span></dd></div>
             </dl>
           </div>
         </section>
@@ -179,7 +179,7 @@ export default async function Home() {
                 <nav aria-label="resources" className={s.resLinks}>
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
-                  <a href={TERMS_URL} target="_blank" rel="noopener">terms of service ↗</a>
+                  <Link href={TERMS_URL}>terms of service</Link>
                   <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
                 </nav>
                 <footer className={s.sign}>

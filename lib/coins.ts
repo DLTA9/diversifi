@@ -32,12 +32,13 @@ export const coinUrl = (c: Coin) => `${ETHERSCAN}/token/${c.address}?a=${RM_ADDR
 export const txUrl = (hash: string) => `${ETHERSCAN}/tx/${hash}`;
 
 export const DOCS_URL = 'https://docs.diversifi.tech/';
-export const TERMS_URL = 'https://docs.diversifi.tech/terms/general-tos';
-// TODO: whitepaper URL. The docs site has no whitepaper page yet.
-export const WHITEPAPER_URL = '#';
+export const TERMS_URL = '/terms';
+// The PDFs are served from diversifi.tech/docs/; keep them there (or in public/docs/) when this site takes over the domain.
+export const WHITEPAPER_URL = 'https://diversifi.tech/docs/whitepaper.pdf';
+export const AUDIT_URL = 'https://diversifi.tech/docs/diversifi-audit.pdf';
 // TODO(open item 4): contact address and X handle are unconfirmed.
 export const CONTACT_MAIL = 'mailto:hello@diversifi.tech';
-export const X_URL = 'https://x.com/';
+export const X_URL = 'https://x.com/0xDiversiFi';
 
 export const ALLOCATION_DATE = '30 Oct 2026';
 export const FOOTNOTE = `Target allocation as of ${ALLOCATION_DATE}. Diversification reduces single-issuer exposure; it does not eliminate risk.`;
