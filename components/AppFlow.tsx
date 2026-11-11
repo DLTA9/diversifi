@@ -232,6 +232,7 @@ export function AppFlow() {
       </nav>
 
       <main className={s.main}>
+        <h1 className="sr-only">mint and redeem DFiUSD</h1>
         <section aria-label="mint and redeem" className={s.flow}>
           {view === 'connect' && (
             <div className={s.connect}>

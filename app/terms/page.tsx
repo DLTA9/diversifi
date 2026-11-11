@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Crops, Wordmark } from '@/components/brand';
 import { DOCS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { og } from '@/lib/site';
 import content from './content.json';
 import s from './terms.module.css';
 
@@ -11,9 +12,10 @@ type Section = { n: string; title: string; blocks: Block[] };
 const terms = content as { updated: string; intro: Block[]; sections: Section[] };
 
 export const metadata: Metadata = {
-  title: 'Terms of Service · DiversiFi',
+  title: 'Terms of Service',
   description: 'The terms that govern your use of the DiversiFi website, app and services.',
   alternates: { canonical: '/terms' },
+  openGraph: og('/terms', 'Terms of Service · DiversiFi', 'The terms that govern your use of the DiversiFi website, app and services.'),
 };
 
 const slug = (sec: Section) => `s${sec.n}`;

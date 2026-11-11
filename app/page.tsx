@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, TokenAddress } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, rmUrl, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
 
@@ -17,8 +18,33 @@ export default async function Home() {
   let ok = true;
   try { initial = await readReserve(); } catch { ok = false; }
 
+  const productLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FinancialProduct',
+    '@id': `${SITE_URL}/#dfiusd`,
+    name: 'DFiUSD',
+    alternateName: 'DiversiFi USD',
+    url: SITE_URL,
+    description: SITE_DESC,
+    category: 'Stablecoin',
+    provider: { '@id': `${SITE_URL}/#org` },
+    identifier: TOKEN_ADDR,
+    additionalProperty: [
+      { '@type': 'PropertyValue', name: 'Network', value: 'Ethereum mainnet' },
+      { '@type': 'PropertyValue', name: 'Token contract', value: TOKEN_ADDR },
+      { '@type': 'PropertyValue', name: 'Reserve contract', value: RM_ADDR },
+      { '@type': 'PropertyValue', name: 'Reserve assets', value: COINS.map(c => c.t).join(', ') },
+      { '@type': 'PropertyValue', name: 'Security audit', value: 'Nethermind', url: AUDIT_URL },
+    ],
+    subjectOf: [
+      { '@type': 'DigitalDocument', name: 'DiversiFi whitepaper', url: WHITEPAPER_URL, encodingFormat: 'application/pdf' },
+      { '@type': 'DigitalDocument', name: 'Nethermind security audit', url: AUDIT_URL, encodingFormat: 'application/pdf' },
+    ],
+  };
+
   return (
     <ReserveProvider initial={initial} initialOk={ok}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
       <nav aria-label="primary" className={s.nav}>
         <div className={`wrap ${s.navIn}`}>
           <a href="#top" aria-label="DiversiFi home" className={s.logo}><Wordmark /></a>
@@ -64,8 +90,9 @@ export default async function Home() {
           <div className="wrap" style={{ paddingBottom: 24 }}><p className="foot" style={{ maxWidth: '72em' }}>{FOOTNOTE}</p></div>
         </section>
 
-        {/* 03 HOW IT WORKS: no headline, intentionally */}
-        <section id="how" aria-label="how it works" className={`wrap ${s.how}`}>
+        {/* 03 HOW IT WORKS: no visible headline, intentionally; the H2 is for outline and crawlers. */}
+        <section id="how" aria-labelledby="how-h" className={`wrap ${s.how}`}>
+          <h2 id="how-h" className="sr-only">how DFiUSD works</h2>
           <div className={s.cards}>
             <article className={s.card}>
               <div className={s.cardHead}><span className={s.num}>01</span><h3 className="h3">mint</h3></div>

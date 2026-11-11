@@ -64,10 +64,12 @@ export function MarketMorph() {
 /* ---------- 1a/1e: live reserve panel ---------- */
 function RollingBlock({ n }: { n: number }) {
   return (
-    <span className={s.roll} aria-label={fmtBlock(n)}>
+    <span className={s.roll}>
+      {/* The reels draw 0–9 with CSS generated content, so page text holds the block number once, not every reel digit. */}
+      <span className="sr-only">{fmtBlock(n)}</span>
       {fmtBlock(n).split('').map((ch, i) =>
         /\d/.test(ch)
-          ? <span key={i} className={s.digit} aria-hidden="true"><span style={{ transform: `translateY(-${ch}em)` }}>{'0123456789'.split('').map(d => <span key={d}>{d}</span>)}</span></span>
+          ? <span key={i} className={s.digit} aria-hidden="true"><span style={{ transform: `translateY(-${ch}em)` }} /></span>
           : <span key={i} aria-hidden="true">{ch}</span>
       )}
     </span>

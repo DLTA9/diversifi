@@ -40,8 +40,8 @@
 .footLink { font-family: var(--sans); font-size: 15px; text-decoration: underline; }
 .roll { display: inline-flex; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1; }
 .digit { display: inline-block; height: 1em; overflow: hidden; }
-.digit > span { display: flex; flex-direction: column; transition: transform 650ms var(--ease); }
-.digit > span > span { height: 1em; }
+.digit > span { display: block; white-space: pre; transition: transform 650ms var(--ease); }
+.digit > span::before { content: "0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9"; }
 
 /* ---------- 02 proof ---------- */
 .proof { border-bottom: 1px solid var(--line); }
