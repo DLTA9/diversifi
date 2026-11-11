@@ -205,6 +205,7 @@ export default async function Home() {
                 <span className="label">ONE TOKEN · SEVEN STABLECOINS UNDERNEATH</span>
                 <nav aria-label="resources" className={s.resLinks}>
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
+                  <Link href="/faq">faq</Link>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
                   <Link href={TERMS_URL}>terms of service</Link>
                   <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
@@ -233,7 +234,7 @@ const GUARDS = [
   {
     // TODO(open item 3): insurance-fund claim needs compliance sign-off.
     title: 'insurance fund.',
-    body: 'Swap fees go to an insurance fund that can buy a failing asset out of the reserve.',
+    body: 'Swap fees fill a fund that can buy a failing coin out of the reserve.',
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
         {[0, 1, 2].map(i => <i key={i} className={s.blk} style={blk(24)} />)}
@@ -244,7 +245,7 @@ const GUARDS = [
   },
   {
     title: 'capped growth.',
-    body: 'Total reserves have a cap. It can only rise at a set rate, with a cooldown between increases.',
+    body: 'Reserves are capped and can only grow at a set rate.',
     icon: (
       <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 3, paddingTop: 8 }}>
         <i style={{ position: 'absolute', top: 0, left: -2, right: -2, borderTop: '1.5px dashed var(--dim)' }} />
@@ -254,7 +255,7 @@ const GUARDS = [
   },
   {
     title: "a frozen coin can't trap the rest.",
-    body: "If one coin can't be transferred out, an emergency mode lets the other six still be withdrawn.",
+    body: 'If one coin can’t move, emergency mode still releases the other six.',
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
         {EVEN7.map((_, i) => <i key={i} className={s.blk} style={i === 3 ? blk(24, 'transparent', { border: '1.5px dashed var(--crit)' }) : blk(24, 'var(--fg)')} />)}
@@ -263,7 +264,7 @@ const GUARDS = [
   },
   {
     title: 'anyone can rebalance.',
-    body: 'A bounty pays whoever moves the reserve back to its target split.',
+    body: 'A bounty pays anyone who moves the reserve back to target.',
     icon: (
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 8px', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 2 }}>{[14, 8, 10, 12].map((w, i) => <i key={i} style={{ display: 'block', width: w, height: 8, borderRadius: 1, background: 'var(--strong)' }} />)}</div>

@@ -1,7 +1,7 @@
 /* ---------- nav ---------- */
 .nav { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
 .navIn { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.logo { text-decoration: none; color: var(--fg); }
+.logo { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--fg); }
 .logo:hover { color: var(--fg); }
 
 /* ---------- 01 hero ---------- */
@@ -37,7 +37,7 @@
 .ring { position: absolute; left: 50%; top: 8px; width: 120px; height: 120px; margin-left: -60px; pointer-events: none; transition: opacity 700ms var(--ease), transform 900ms var(--ease); }
 .ring svg { display: block; }
 .panelFoot { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: var(--dim); }
-.footLink { font-family: var(--sans); font-size: 15px; text-decoration: underline; }
+.footLink { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--sans); font-size: 15px; text-decoration: underline; }
 .roll { display: inline-flex; color: var(--fg); font-variant-numeric: tabular-nums; line-height: 1; }
 .digit { display: inline-block; height: 1em; overflow: hidden; }
 .digit > span { display: block; white-space: pre; transition: transform 650ms var(--ease); }
@@ -55,7 +55,9 @@
 
 /* ---------- 03 how ---------- */
 .how { padding-top: 64px; scroll-margin-top: 72px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 40px 32px; }
+.cards { display: grid; grid-template-columns: 1fr; gap: 40px 32px; }
+@media (min-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } .cards > :last-child { grid-column: 1 / -1; } }
+@media (min-width: 1100px) { .cards { grid-template-columns: repeat(3, 1fr); } .cards > :last-child { grid-column: auto; } }
 .card { display: flex; flex-direction: column; gap: 20px; padding-top: 24px; border-top: 1px solid var(--strong); }
 .cardDashed { border-top-style: dashed; }
 .cardHead { display: flex; align-items: baseline; gap: 16px; }
@@ -85,6 +87,8 @@
 .cellLink { color: var(--fg); text-decoration: none; }
 .cellLink:hover { color: var(--fg); text-decoration: underline; }
 .src { white-space: nowrap; font-family: var(--sans); color: var(--signal); }
+/* every linked cell fills its cell so the tap target is at least 44 px tall */
+.tr > a { display: flex; align-items: center; justify-content: flex-end; min-height: 44px; }
 .nRow { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .nTop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .nCoin { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; }
@@ -145,11 +149,12 @@
 .dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .dl dt { font-size: 13px; font-weight: 500; letter-spacing: .02em; color: var(--dim); }
 .dl dd { margin: 0; display: flex; gap: 16px; flex-wrap: wrap; justify-content: flex-end; color: var(--fg); }
+.dl dd a { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
 .addr { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
 .addrText { font-size: 13px; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.copyBtn { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; margin: -6px 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--dim); cursor: pointer; transition: color 160ms, border-color 160ms; }
+.copyBtn { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; margin: -12px 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--dim); cursor: pointer; transition: color 160ms, border-color 160ms; }
 .copyBtn:hover { color: var(--fg); border-color: var(--strong); }
-.addrLink { flex: none; font-size: 15px; text-decoration: none; color: var(--signal); }
+.addrLink { flex: none; display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; margin: -12px -12px -12px 0; font-size: 15px; text-decoration: none; color: var(--signal); }
 .addrLink:hover { opacity: .75; }
 
 /* ---------- 07 final CTA ---------- */
@@ -164,7 +169,7 @@
 
 /* resource links under "open app" in the final CTA */
 .resLinks { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-top: 8px; font-size: 15px; }
-.resLinks a { display: inline-flex; align-items: center; min-height: 44px; color: var(--fg); text-decoration: none; }
+.resLinks a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; color: var(--fg); text-decoration: none; }
 .resLinks a:hover { color: var(--signal); }
 
 /* wordmark + copyright, closing the final CTA (there is no separate page footer) */

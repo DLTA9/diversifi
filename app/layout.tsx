@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { og, SAME_AS, SITE_DESC, SITE_NAME, SITE_URL } from '@/lib/site';
+import { CONTACT_EMAIL, og, SAME_AS, SITE_DESC, SITE_NAME, SITE_URL } from '@/lib/site';
 import './globals.css';
 
 // Self-hosted Latin-subset variable WOFF2 (OFL-1.1, from Fontsource). Bundled in the repo so builds
@@ -8,7 +8,7 @@ import './globals.css';
 const host = localFont({ src: './fonts/host-grotesk-latin-wght-normal.woff2', weight: '300 800', variable: '--font-host', display: 'swap' });
 const mono = localFont({ src: './fonts/geist-mono-latin-wght-normal.woff2', weight: '100 900', variable: '--font-geist-mono', display: 'swap' });
 
-const TITLE = 'DFiUSD: the diversified dollar stablecoin · DiversiFi';
+const TITLE = 'DFiUSD · the diversified USD stablecoin · DiversiFi';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -32,6 +32,7 @@ const siteLd = {
       name: SITE_NAME,
       url: SITE_URL,
       logo: `${SITE_URL}/app-icon-512.png`,
+      email: CONTACT_EMAIL,
       description: SITE_DESC,
       sameAs: SAME_AS,
     },

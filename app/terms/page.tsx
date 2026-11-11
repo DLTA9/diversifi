@@ -99,6 +99,7 @@ export default function Terms() {
             <nav aria-label="resources" className={s.links}>
               <Link href="/">home</Link>
               <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
+              <Link href="/faq">faq</Link>
               <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
               <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
             </nav>

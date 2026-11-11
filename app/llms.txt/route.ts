@@ -1,5 +1,6 @@
 import { AUDIT_URL, COINS, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, TOKEN_ADDR, WHITEPAPER_URL, X_URL } from '@/lib/coins';
-import { fmtBlock, readReserve, type ReserveReading } from '@/lib/reserve';
+import { faqs, faqText } from '@/lib/faq';
+import { FALLBACK_READING, fmtBlock, readReserve, type ReserveReading } from '@/lib/reserve';
 import { SITE_URL } from '@/lib/site';
 
 // llms.txt (https://llmstxt.org): a plain-text brief for AI assistants, with the live reserve split.
@@ -38,10 +39,14 @@ export async function GET() {
     '- Diversification reduces single-issuer exposure; it does not eliminate risk.',
     '',
     ...reserve,
+    '## FAQ',
+    '',
+    ...faqs(r ?? FALLBACK_READING, !!r).flatMap(f => [`### ${f.q}`, '', faqText(f.a), '']),
     '## Links',
     '',
     `- [Home](${SITE_URL}/): what DFiUSD is, the live reserve, and what happens if an issuer fails`,
     `- [Mint and redeem](${SITE_URL}/app): the DiversiFi app`,
+    `- [FAQ](${SITE_URL}/faq): backing, depegs, fees, redemption, audits and risks`,
     `- [Documentation](${DOCS_URL}): protocol mechanics, contract API and risks`,
     `- [Whitepaper](${WHITEPAPER_URL}): PDF`,
     `- [Nethermind audit](${AUDIT_URL}): PDF`,
