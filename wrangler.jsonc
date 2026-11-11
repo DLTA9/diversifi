@@ -6,5 +6,9 @@
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Page cache (see open-next.config.ts). Create the bucket once in the dashboard: R2 → Create bucket → diversifi-cache.
+  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "diversifi-cache" }],
+  // Lets background ISR refreshes call this same Worker.
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "diversifi" }]
 }

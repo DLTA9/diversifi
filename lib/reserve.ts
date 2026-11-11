@@ -21,12 +21,15 @@ export type ReserveReading = {
 export const STALE_MS = 10 * 60_000;
 export const POLL_MS = 60_000;
 
-const RPC = process.env.NEXT_PUBLIC_RPC_URL;
-export const rpcTransport = fallback([
-  ...(RPC ? [http(RPC)] : []),
-  http('https://ethereum-rpc.publicnode.com'),
-  http('https://eth.llamarpc.com'),
-]);
+// RPC_URL is server-only (a private endpoint, never shipped to browsers); NEXT_PUBLIC_RPC_URL is the browser's.
+// Short per-endpoint timeouts so a slow public node fails over instead of stalling a page render.
+const RPCS = [
+  typeof window === 'undefined' ? process.env.RPC_URL : undefined,
+  process.env.NEXT_PUBLIC_RPC_URL,
+  'https://ethereum-rpc.publicnode.com',
+  'https://eth.llamarpc.com',
+].filter((u): u is string => !!u);
+export const rpcTransport = fallback(RPCS.map(u => http(u, { timeout: 4_000, retryCount: 1 })));
 
 let client: PublicClient | null = null;
 const getClient = () => (client ??= createPublicClient({ chain: mainnet, transport: rpcTransport, batch: { multicall: true } }) as PublicClient);
