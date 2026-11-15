@@ -354,6 +354,27 @@ export function AppFlow() {
     </div>
   );
 
+  /* Basket side of the full-basket boxes: a tag, and the per-coin amounts inside the box. */
+  const BasketTag = () => <span className={s.unit}><MiniBar width={22} height={8} gap={1} radius={1} />basket</span>;
+  const MixList = () => (
+    <div className={s.boxMix}>
+      {COINS.map((c, i) => {
+        const dp = deposits[i];
+        const low = isMint && dp && dp.amount > coinBals[i] && ready;
+        const val = isMint ? (dp && valid ? f2(toNum(dp.amount, dp.decimals)) : '0.00') : f2(valid ? redeem.parts[i] : 0);
+        return (
+          <div key={c.t} className={s.mixRow}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <i className="sw" style={{ background: c.color }} />{c.t}
+              <span style={{ fontSize: 12 }} className="dim">{isMint ? `balance ${ready ? f2(down2(usdBal(i))) : '—'}` : reading.coins[i].current.toFixed(1) + '%'}</span>
+            </span>
+            <span style={{ fontWeight: 600, color: low ? 'var(--crit)' : valid ? 'var(--fg)' : 'var(--dim)' }}>{val}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className={s.page}>
       <nav aria-label="app" className={s.nav}>
@@ -467,17 +488,9 @@ export function AppFlow() {
                 </>
               )}
 
-              {/* ---------- MINT & REDEEM: work with the reserve contract ---------- */}
+              {/* ---------- MINT & REDEEM: work with the reserve contract, laid out like swap ---------- */}
               {tab === 'contribute' && (
                 <>
-                  <div className={s.subRow}>
-                    <div role="radiogroup" aria-label="direction" className={s.seg}>
-                      <button type="button" role="radio" aria-checked={dir === 'mint'} className={dir === 'mint' ? s.segOn : undefined} onClick={() => goDir('mint')}>mint</button>
-                      <button type="button" role="radio" aria-checked={dir === 'redeem'} className={dir === 'redeem' ? s.segOn : undefined} onClick={() => goDir('redeem')}>redeem</button>
-                    </div>
-                    {mintPaused && dir === 'mint' && <span className="small" style={{ color: 'var(--warn)' }}>minting is paused</span>}
-                  </div>
-
                   <div role="radiogroup" aria-label="how" className={s.methods}>
                     <button type="button" role="radio" aria-checked={method === 'rebalance'} className={`${s.method} ${method === 'rebalance' ? s.methodOn : ''}`} onClick={() => { setMethod('rebalance'); clear(); }}>
                       <span className={s.methodTitle}>one coin · rebalance</span>
@@ -485,12 +498,13 @@ export function AppFlow() {
                     </button>
                     <button type="button" role="radio" aria-checked={method === 'basket'} className={`${s.method} ${method === 'basket' ? s.methodOn : ''}`} onClick={() => { setMethod('basket'); clear(); }}>
                       <span className={s.methodTitle}>the full basket</span>
-                      <span className={s.methodBody}>{dir === 'mint' ? 'Deposit the full basket at the target split.' : 'Receive the current mix of every coin.'} Always available.</span>
+                      <span className={s.methodBody}>{dir === 'mint' ? 'Deposit every basket coin at the target split.' : 'Receive the current mix of every coin.'} Always available.</span>
                     </button>
                   </div>
 
-                  {/* one coin, rebalancing */}
-                  {/* balanced: the form stays visible but greyed out, with a short note above it */}
+                  {mintPaused && dir === 'mint' && <p className={s.note} style={{ color: 'var(--warn)' }}>minting is paused right now. redeeming still works: tap ⇅ to switch.</p>}
+
+                  {/* one coin, rebalancing. Balanced: the form stays visible but greyed out, with a short note above it */}
                   {method === 'rebalance' && !anyOpen && (
                     <p className={s.note}>
                       <strong>the basket is balanced right now.</strong> Every coin is on target, so there is nothing to {dir === 'mint' ? 'add' : 'take out'} yet.{' '}
@@ -499,70 +513,76 @@ export function AppFlow() {
                   )}
                   {method === 'rebalance' && (
                     <fieldset className={s.fs} disabled={!anyOpen}>
-                      <div className={s.field}>
-                        <div className={s.fieldHead}>
-                          <span className={s.flabel}>{dir === 'mint' ? 'you add' : 'you take out'}</span>
-                          <span className={s.room}>{anyOpen ? `reserve ${dir === 'mint' ? 'takes' : 'releases'} up to ${f2(rRoom)} ${rCoin.t}` : 'every coin on target'}</span>
+                      <div className={s.pair}>
+                        <div className={s.box} style={inputStyle(!!rebErr)}>
+                          <div className={s.fieldHead}>
+                            <label htmlFor="amount" className={s.flabel}>{dir === 'mint' ? 'you add' : 'you give'}</label>
+                            <span className={s.room}>{anyOpen ? `reserve ${dir === 'mint' ? 'takes' : 'releases'} up to ${f2(rRoom)} ${rCoin.t}` : 'every coin on target'}</span>
+                          </div>
+                          <div className={s.boxRow}>
+                            {amountInput(!!rebErr, dir === 'mint' ? 'you add' : 'you give')}
+                            {dir === 'mint'
+                              ? <CoinPick id="rebcoin" label="coin to add" value={String(rIdx)} onChange={v => { setRebIdx(Number(v)); clear(); }}
+                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(gap[i].room))}` : 'on target' }))} />
+                              : <DfiTag />}
+                          </div>
+                          {dir === 'mint'
+                            ? balLine(`balance ${ready ? f2(down2(usdBal(rIdx))) : '—'} ${rCoin.t}`, Math.min(usdBal(rIdx), rRoom), rebErr)
+                            : balLine(`balance ${ready ? f2(down2(dfiNum)) : '—'} DFiUSD`, Math.min(rRoom, dfiNum), rebErr)}
                         </div>
-                        <div className={s.input} style={inputStyle(!!rebErr)}>
-                          {amountInput(!!rebErr, dir === 'mint' ? 'you add' : 'you take out')}
-                          <CoinPick id="rebcoin" label={dir === 'mint' ? 'coin to add' : 'coin to take out'} value={String(rIdx)} onChange={v => { setRebIdx(Number(v)); clear(); }}
-                            options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(gap[i].room))}` : 'on target' }))} />
-                        </div>
-                        {dir === 'mint'
-                          ? balLine(`balance ${ready ? f2(down2(usdBal(rIdx))) : '—'} ${rCoin.t}`, Math.min(usdBal(rIdx), rRoom), rebErr)
-                          : balLine(`balance ${ready ? f2(down2(dfiNum)) : '—'} DFiUSD`, Math.min(rRoom, dfiNum), rebErr)}
-                      </div>
 
-                      <div className={s.field}>
-                        <span className={s.flabel}>{dir === 'mint' ? 'you get' : 'you pay'}</span>
-                        <div className={s.quote}>
-                          <span className={s.quoteAmt} style={{ color: amt > 0 ? 'var(--fg)' : 'var(--strong)' }}>{amt > 0 ? `≈ ${f2(dir === 'mint' ? amt + reward : Math.max(0, amt - reward))}` : '0.00'}</span>
-                          <DfiTag />
+                        <button type="button" className={s.flip} aria-label={dir === 'mint' ? 'switch to redeem' : 'switch to mint'} onClick={() => goDir(dir === 'mint' ? 'redeem' : 'mint')}>
+                          <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"><path d="M5 2.5v11M2.5 11 5 13.5 7.5 11M11 13.5v-11M8.5 5 11 2.5 13.5 5" /></svg>
+                        </button>
+
+                        <div className={`${s.box} ${s.boxOut}`}>
+                          <span className={s.flabel}>{dir === 'mint' ? 'you get' : 'you receive'}</span>
+                          <div className={s.boxRow}>
+                            <span className={s.quoteAmt} style={{ color: amt > 0 ? 'var(--fg)' : 'var(--strong)' }}>{amt > 0 ? `≈ ${f2(dir === 'mint' ? amt + reward : amt)}` : '0.00'}</span>
+                            {dir === 'mint'
+                              ? <DfiTag />
+                              : <CoinPick id="rebcoin" label="coin to take out" value={String(rIdx)} onChange={v => { setRebIdx(Number(v)); clear(); }}
+                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(gap[i].room))}` : 'on target' }))} />}
+                          </div>
                         </div>
                       </div>
 
                       <dl className={s.dl} style={{ fontSize: 14 }}>
                         <div><dt>rate</dt><dd className="mono">1 {rCoin.t} = 1 DFiUSD · no fee</dd></div>
-                        <div><dt>your reward</dt><dd className="mono" style={{ color: reward > 0 ? 'var(--ok)' : undefined }}>{reward > 0 ? `+ ${f2(reward)} DFiUSD` : bounty > 0 ? '—' : 'pool empty right now'}</dd></div>
+                        <div><dt>your reward</dt><dd className="mono" style={{ color: reward > 0 ? 'var(--ok)' : undefined }}>{reward > 0 ? (dir === 'mint' ? `+ ${f2(reward)} DFiUSD` : `${f2(reward)} DFiUSD less to give`) : bounty > 0 ? '—' : 'pool empty right now'}</dd></div>
                         <div><dt>reward pool</dt><dd className="mono">{f2(bounty)} DFiUSD</dd></div>
                       </dl>
-                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid} onClick={() => rebValid && setStep('review')}>review</button>
+                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid} onClick={() => rebValid && setStep('review')}>review {dir === 'mint' ? 'mint' : 'redeem'}</button>
                     </fieldset>
                   )}
 
                   {/* the full basket */}
                   {method === 'basket' && (
                     <>
-                      <div className={s.field}>
-                        <span className={s.flabel}>{isMint ? 'you mint' : 'you redeem'}</span>
-                        <div className={s.input} style={inputStyle(!!error)}>
-                          {amountInput(!!error, isMint ? 'you mint' : 'you redeem')}
-                          <DfiTag />
+                      <div className={s.pair}>
+                        <div className={s.box} style={inputStyle(!!error)}>
+                          <label htmlFor="amount" className={s.flabel}>{isMint ? 'you add (value in DFiUSD)' : 'you give'}</label>
+                          <div className={s.boxRow}>
+                            {amountInput(!!error, isMint ? 'value to add' : 'you give')}
+                            {isMint ? <BasketTag /> : <DfiTag />}
+                          </div>
+                          {isMint
+                            ? balLine(`you can mint up to ${ready ? f2(down2(toNum(maxRaw, 18))) : '—'}`, toNum(maxRaw, 18), error)
+                            : balLine(`balance ${ready ? f2(down2(dfiNum)) : '—'} DFiUSD`, dfiNum, error)}
+                          {isMint && <MixList />}
                         </div>
-                        {isMint
-                          ? balLine(`you can mint up to ${ready ? f2(down2(toNum(maxRaw, 18))) : '—'}`, toNum(maxRaw, 18), error)
-                          : balLine(`balance ${ready ? f2(down2(dfiNum)) : '—'} DFiUSD`, dfiNum, error)}
-                      </div>
 
-                      <div className={s.field}>
-                        <span className={s.flabel}>{isMint ? 'you deposit' : 'you receive'}</span>
-                        <div className={s.mix}>
-                          {COINS.map((c, i) => {
-                            const dp = deposits[i];
-                            const low = isMint && dp && dp.amount > coinBals[i] && ready;
-                            const val = isMint ? (dp && valid ? f2(toNum(dp.amount, dp.decimals)) : '0.00') : f2(valid ? redeem.parts[i] : 0);
-                            return (
-                              <div key={c.t} className={s.mixRow}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <i className="sw" style={{ background: c.color }} />{c.t}
-                                  <span style={{ fontSize: 12 }} className="dim">{isMint ? `balance ${ready ? f2(down2(usdBal(i))) : '—'}` : reading.coins[i].current.toFixed(1) + '%'}</span>
-                                </span>
-                                <span style={{ fontWeight: 600, color: low ? 'var(--crit)' : valid ? 'var(--fg)' : 'var(--dim)' }}>{val}</span>
-                              </div>
-                            );
-                          })}
-                          <p className="foot" style={{ padding: '10px 0 8px' }}>{isMint ? 'Mints take every basket coin at the target split.' : 'Redeeming pays the reserve’s current mix, with no slippage.'}</p>
+                        <button type="button" className={s.flip} aria-label={dir === 'mint' ? 'switch to redeem' : 'switch to mint'} onClick={() => goDir(dir === 'mint' ? 'redeem' : 'mint')}>
+                          <svg viewBox="0 0 16 16" width={16} height={16} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round"><path d="M5 2.5v11M2.5 11 5 13.5 7.5 11M11 13.5v-11M8.5 5 11 2.5 13.5 5" /></svg>
+                        </button>
+
+                        <div className={`${s.box} ${s.boxOut}`}>
+                          <span className={s.flabel}>{isMint ? 'you get' : 'you receive'}</span>
+                          <div className={s.boxRow}>
+                            <span className={s.quoteAmt} style={{ color: valid ? 'var(--fg)' : 'var(--strong)' }}>{valid ? f2(isMint ? amt : redeem.net) : '0.00'}</span>
+                            {isMint ? <DfiTag /> : <BasketTag />}
+                          </div>
+                          {!isMint && <MixList />}
                         </div>
                       </div>
 
@@ -570,7 +590,7 @@ export function AppFlow() {
                         <div><dt>{isMint ? 'mint fee' : 'redeem fee'}</dt><dd className="mono">{feeText}</dd></div>
                         {isMint && <div><dt>approvals</dt><dd className="mono">{valid ? (approvalsNeeded ? `${approvalsNeeded} of ${COINS.length} coins` : 'none needed') : '—'}</dd></div>}
                       </dl>
-                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!valid} onClick={() => valid && setStep('review')}>review</button>
+                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!valid} onClick={() => valid && setStep('review')}>review {isMint ? 'mint' : 'redeem'}</button>
                     </>
                   )}
                 </>
