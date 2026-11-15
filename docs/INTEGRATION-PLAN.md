@@ -186,8 +186,16 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
       - "you received" is read from the receipt
       - fork test `tests/swap.fork.test.ts`: 36/36. Clicked through in the app on the fork (`?fork=1`) with USDC → DFiUSD and DFiUSD → USDT.
       - the coming-soon state and the Uniswap fallback link are removed
-   2. full-basket mint and redeem
-   3. rebalance (swapTowardsTarget)
+   2. **full-basket mint and redeem: done (15 Nov 2026).**
+      - fresh `quoteMint`/`quoteBurn` at confirm: stops if it would take more of any coin, or pay noticeably less, than the review showed
+      - exact approvals checked against fresh allowances, simulated before sending, amounts read from the receipt
+   3. **rebalance (swapTowardsTarget): done (15 Nov 2026).**
+      - re-reads the reserve at confirm and reruns the exact maths
+      - stops before any approval if the limit no longer fits or the reward shrank
+      - simulated before sending
+   - fork test `tests/reserve.fork.test.ts`: 16/16, with the reward matching the contract to the last unit
+   - all four flows clicked through in the app on the fork, including a "someone else rebalanced first" case that stopped correctly
+   - **next: step 4.** Sepolia run, a small real-money run with our own wallet, terms acceptance gate, EIP-6963 wallet discovery
 
    When a flow passes its tests, remove its "coming soon" state (`SWAP_LIVE`, the SOON tag, the Uniswap fallback link).
 4. **Testing:**

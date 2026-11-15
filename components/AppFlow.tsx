@@ -50,6 +50,24 @@ function drifted(r: ReserveReading): ReserveReading {
   return { ...r, total, coins: r.coins.map((c, i) => ({ ...c, held: held[i], current: (held[i] / total) * 100 })) };
 }
 
+/** Exact rebalancing state from the reserve read (positions as in the `params` multicall). Dev-only drift skews it. */
+function toRebState(pd: readonly unknown[] | undefined, drift: boolean): RebState | null {
+  if (!pd) return null;
+  const current = pd[6] as readonly TargetParam[];
+  const heldBy = new Map(COINS.map((c, i) => [c.address.toLowerCase(), pd[9 + i] as bigint]));
+  const mult = [80n, 100n, 100n, 135n, 100n, 100n, 100n];
+  let assets = current.map(a => ({ address: a.assetAddress, targetAllocation: a.targetAllocation, decimals: a.decimals, held: heldBy.get(a.assetAddress.toLowerCase()) ?? 0n }));
+  let total = pd[7] as bigint;
+  if (drift) {
+    assets = assets.map(a => ({ ...a, held: (a.held * mult[Math.max(0, COINS.findIndex(c => c.address.toLowerCase() === a.address.toLowerCase()))]) / 100n }));
+    total = assets.reduce((t, a) => t + a.held, 0n);
+  }
+  return { assets, total, bounty: drift ? 250n * E18 : (pd[5] as bigint), maxReserves: pd[8] as bigint };
+}
+
+/** Thrown before anything is sent, with a message for the person. */
+const stopWith = (userMessage: string) => Object.assign(new Error(userMessage), { userMessage });
+
 /** Per-coin gap to target in dollars. Positive: the reserve is short and accepts a deposit up to `room`.
  *  Negative: it holds too much and allows a withdrawal up to `room`. Mirrors ReserveMath.calcMaxIndividualDelta. */
 function gaps(r: ReserveReading) {
@@ -213,19 +231,7 @@ export function AppFlow() {
   const bountyRaw = (pd?.[5] ?? 0n) as bigint;
   const mintEnabled = mintEnabledRead ?? reading.mintEnabled;
   // Exact rebalancing state (lib/rebalance.ts). Dev-only ?drift=1 skews the holdings the same way as the display.
-  const rebState = useMemo<RebState | null>(() => {
-    if (!pd) return null;
-    const current = pd[6] as readonly TargetParam[];
-    const heldBy = new Map(COINS.map((c, i) => [c.address.toLowerCase(), pd[9 + i] as bigint]));
-    const mult = [80n, 100n, 100n, 135n, 100n, 100n, 100n];
-    let assets = current.map(a => ({ address: a.assetAddress, targetAllocation: a.targetAllocation, decimals: a.decimals, held: heldBy.get(a.assetAddress.toLowerCase()) ?? 0n }));
-    let total = pd[7] as bigint;
-    if (drift) {
-      assets = assets.map(a => ({ ...a, held: (a.held * mult[Math.max(0, COINS.findIndex(c => c.address.toLowerCase() === a.address.toLowerCase()))]) / 100n }));
-      total = assets.reduce((t, a) => t + a.held, 0n);
-    }
-    return { assets, total, bounty: drift ? 250n * E18 : bountyRaw, maxReserves: pd[8] as bigint };
-  }, [pd, drift, bountyRaw]);
+  const rebState = useMemo(() => toRebState(pd, drift), [pd, drift]);
   const w = (wallet.data ?? []) as readonly bigint[];
   const dfiBal = w[0] ?? 0n;
   const coinBals = COINS.map((_, i) => w[1 + i] ?? 0n);
@@ -394,12 +400,17 @@ export function AppFlow() {
     const stop = await preflight();
     if (stop) { setFailed(stop); setPending(false); showToast({ color: 'var(--crit)', text: 'stopped before signing: safety check failed.', word: 'STOPPED' }, 6000); return; }
     const waitTx = async (hash: Hash) => { await client.waitForTransactionReceipt({ hash }); return hash; };
-    // USDT reverts on changing a non-zero allowance; reset it first.
-    const approve = async (i: number, units: bigint) => {
+    // Exact approval of one coin to the reserve, only if the current (freshly read) allowance is too small.
+    // USDT reverts on changing a non-zero allowance, so it is reset to zero first.
+    const approveIfNeeded = async (i: number, units: bigint, label: string) => {
       const c = COINS[i];
-      if (c.t === 'USDT' && allowances[i] > 0n) await waitTx(await writeContractAsync({ address: c.address, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, 0n], chainId: 1 }));
+      const current = await client.readContract({ address: c.address, abi: erc20Abi, functionName: 'allowance', args: [address!, RM_ADDR] });
+      if (current >= units) return;
+      showToast({ color: 'var(--warn)', text: label, word: 'WAITING' });
+      if (c.t === 'USDT' && current > 0n) await waitTx(await writeContractAsync({ address: c.address, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, 0n], chainId: 1 }));
       await waitTx(await writeContractAsync({ address: c.address, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, units], chainId: 1 }));
     };
+    const simulate = (call: Parameters<typeof client.simulateContract>[0]) => client.simulateContract({ ...call, account: address! } as never);
     try {
       let hash: Hash;
       let received = '';
@@ -415,8 +426,8 @@ export function AppFlow() {
         const outNum = toNum(q, side === 'buy' ? 18 : sCoin.decimals);
         const m = dfiPrice(key, s0[0], sCoin.decimals);
         const imp = 1 - outNum / (side === 'buy' ? amt / m : amt * m);
-        if (outNum / amt < MIN_RATE || imp > MAX_IMPACT) throw Object.assign(new Error('limits'), { userMessage: 'the price moved past the safety limits. nothing was sent.' });
-        if (outNum < (swapOut ?? 0) * (1 - Number(SLIPPAGE_BPS) / 10_000)) throw Object.assign(new Error('moved'), { userMessage: 'the price moved since your review. go back to see the new quote.' });
+        if (outNum / amt < MIN_RATE || imp > MAX_IMPACT) throw stopWith('the price moved past the safety limits. nothing was sent.');
+        if (outNum < (swapOut ?? 0) * (1 - Number(SLIPPAGE_BPS) / 10_000)) throw stopWith('the price moved since your review. go back to see the new quote.');
         const minAmountOut = minOut(q);
         const now = Number(block.timestamp);
         const steps = (needErc20 ? 1 : 0) + (needPermit ? 1 : 0) + 1;
@@ -449,34 +460,48 @@ export function AppFlow() {
         showToast({ color: 'var(--warn)', text: `confirm the swap in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
         hash = await writeContractAsync({ address: UNIVERSAL_ROUTER, abi: routerAbi, functionName: 'execute', args, chainId: 1 });
       } else if (rebalancing()) {
-        if (rebNeedsApproval) {
-          showToast({ color: 'var(--warn)', text: `approve ${rCoin.t} in your wallet · 1 of 2`, word: 'WAITING' });
-          await approve(rIdx, rebUnits);
-        }
+        // Fresh reserve state, same exact maths as the form; stop if the limit or the reward changed.
+        const fresh = toRebState((await params.refetch()).data as readonly unknown[] | undefined, drift);
+        const fq = fresh ? quoteRebalance(fresh, rCoin.address, dir, rebUnits) : null;
+        if (!fq?.ok) throw stopWith('the reserve changed since your review and can’t take this amount now. go back to see the new limit.');
+        if (rq?.ok && fq.reward < rq.reward) throw stopWith('the reward changed since your review. go back to see the new numbers.');
+        if (dir === 'mint') await approveIfNeeded(rIdx, fq.coinUnits, `approve ${rCoin.t} in your wallet · 1 of 2`);
+        const call = { ...RM, functionName: 'swapTowardsTarget', args: [rCoin.address, dir === 'mint' ? fq.coinUnits : -fq.coinUnits] } as const;
+        await simulate(call);
         showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...RM, functionName: 'swapTowardsTarget', args: [rCoin.address, dir === 'mint' ? rebUnits : -rebUnits], chainId: 1 });
+        hash = await writeContractAsync({ ...call, chainId: 1 });
       } else if (isMint) {
-        const need = deposits.map((dp, i) => ({ ...dp, i })).filter(dp => dp.amount > allowances[dp.i]);
-        for (let k = 0; k < need.length; k++) {
-          showToast({ color: 'var(--warn)', text: `approve ${need[k].coin.t} in your wallet · ${k + 1} of ${need.length}`, word: 'WAITING' });
-          await approve(need[k].i, need[k].amount);
-        }
+        // Fresh exact quote; it may not ask for more of any coin than the review showed.
+        const [list] = await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteMint', args: [raw] });
+        const fresh = COINS.map(c => list.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n);
+        if (fresh.some((amount, i) => amount > (deposits[i]?.amount ?? 0n))) throw stopWith('the amounts changed since your review. go back to see the new quote.');
+        const need = fresh.map((amount, i) => ({ amount, i })).filter(x => x.amount > 0n);
+        for (let k = 0; k < need.length; k++) await approveIfNeeded(need[k].i, need[k].amount, `approve ${COINS[need[k].i].t} in your wallet · ${k + 1} of ${need.length}`);
+        const call = { ...RM, functionName: 'mint', args: [raw, '0x'] } as const;
+        await simulate(call);
         showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...RM, functionName: 'mint', args: [raw, '0x'], chainId: 1 });
+        hash = await writeContractAsync({ ...call, chainId: 1 });
       } else {
+        // Fresh exact quote; stop if the basket would now pay noticeably less than the review showed.
+        const [list] = await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteBurn', args: [raw] });
+        const freshNet = COINS.reduce((t, c) => t + toNum(list.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n, c.decimals), 0);
+        if (freshNet < redeem.net - 0.01) throw stopWith('the payout changed since your review. go back to see the new quote.');
+        const call = { ...RM, functionName: 'burn', args: [raw, false, '0x'] } as const;
+        await simulate(call);
         showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...RM, functionName: 'burn', args: [raw, false, '0x'], chainId: 1 });
+        hash = await writeContractAsync({ ...call, chainId: 1 });
       }
       showToast({ color: 'var(--warn)', text: 'waiting for the block.', word: 'PENDING' });
       const r = await client.waitForTransactionReceipt({ hash });
       if (r.status !== 'success') throw new Error('reverted');
-      if (tab === 'swap') {
-        // What actually arrived, read from the receipt.
-        const got = parseEventLogs({ abi: erc20Abi, logs: r.logs, eventName: 'Transfer' })
-          .filter(l => l.address.toLowerCase() === tokenOut.toLowerCase() && l.args.to.toLowerCase() === address!.toLowerCase())
-          .reduce((t, l) => t + l.args.value, 0n);
-        received = `${f2(toNum(got, side === 'buy' ? 18 : sCoin.decimals))} ${outT}`;
-      }
+      // What actually arrived, read from the receipt: every Transfer of a known token to this wallet.
+      const arrived = parseEventLogs({ abi: erc20Abi, logs: r.logs, eventName: 'Transfer' })
+        .filter(l => l.args.to.toLowerCase() === address!.toLowerCase());
+      const sumOf = (token: string, decimals: number) => toNum(arrived.filter(l => l.address.toLowerCase() === token.toLowerCase()).reduce((t, l) => t + l.args.value, 0n), decimals);
+      if (tab === 'swap') received = `${f2(sumOf(tokenOut, side === 'buy' ? 18 : sCoin.decimals))} ${outT}`;
+      else if (dir === 'mint') received = `${f2(sumOf(TOKEN_ADDR, 18))} DFiUSD`;
+      else if (rebalancing()) received = `${f2(sumOf(rCoin.address, rCoin.decimals))} ${rCoin.t}`;
+      else received = `${f2(COINS.reduce((t, c) => t + sumOf(c.address, c.decimals), 0))} across the basket`;
       const title = tab === 'swap' ? 'swap confirmed.' : dir === 'mint' ? (rebalancing() ? 'rebalance confirmed.' : 'mint confirmed.') : (rebalancing() ? 'rebalance confirmed.' : 'redemption confirmed.');
       setDone({ at: Date.now(), hash, sumIn: summary.in, sumOut: received || summary.out, title, inLabel: tab === 'swap' ? 'you paid' : dir === 'mint' ? 'you added' : 'you redeemed' });
       setHistory(h => [{ kind: summary.kind, hash, amt: tab === 'swap' ? (side === 'buy' ? `+ ${received || summary.out}` : `− ${summary.in}`) : dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
