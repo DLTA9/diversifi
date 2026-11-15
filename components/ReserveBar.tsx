@@ -15,7 +15,7 @@ type Props = {
   mode?: ReserveMode;
   /** Hold the settle animation until true (the hero waits for its ring intro). */
   start?: boolean;
-  /** Default readout shows whether the basket is on target and how many issuers back it (the app's swap page). */
+  /** Default readout shows whether the basket is on target and how many issuers and coins back it. */
   status?: boolean;
 };
 
@@ -82,7 +82,7 @@ export function ReserveBar({ size = 'md', readout = false, showTotal = true, ani
   const rd = hc
     ? { label: hc.t, color: COINS[h].color, value: hc.current.toFixed(1) + '%', scope: (showTotal ? fmtK(hc.held) + ' held · ' : '') + 'target ' + hc.target.toFixed(1) + '% · as of ' + asOf }
     : status
-      ? { label: 'RESERVE STATUS', color: '', value: loading ? '—' : balanced ? 'balanced' : 'off target', scope: loading ? 'reading the reserve contract' : `${issuers} issuers · as of ${asOf}` }
+      ? { label: 'RESERVE STATUS', color: '', value: loading ? '—' : balanced ? 'balanced' : 'off target', scope: loading ? 'reading the reserve contract' : `${issuers} issuers · ${data.length} coins · as of ${asOf}` }
       : { label: 'RESERVE', color: '', value: loading ? '—' : showTotal ? fmtK(reading.total) : 'multi-issuer', scope: loading ? 'reading the reserve contract' : (showTotal ? 'every basket coin' : 'no single issuer') + ' · as of ' + asOf };
 
   const onSegClick = (i: number) => (e: React.MouseEvent) => {

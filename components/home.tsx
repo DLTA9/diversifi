@@ -127,7 +127,7 @@ export function ReservePanel() {
       {mode === 'unavailable' && <p className="small">reserve data couldn&apos;t load. <span className="dim">last reading {lastAt} UTC.</span></p>}
       <div style={{ position: 'relative' }}>
         <div style={{ opacity: intro >= 2 ? 1 : 0, transition: 'opacity 500ms' }}>
-          <ReserveBar size="md" readout showTotal={false} start={intro >= 2} />
+          <ReserveBar size="md" readout showTotal={false} status start={intro >= 2} />
         </div>
         <div aria-hidden="true" className={s.ring} style={{ opacity: intro >= 2 ? 0 : 1, transform: intro >= 2 ? 'scale(.55) rotate(120deg)' : 'none' }}>
           <svg viewBox="0 0 100 100" width={120} height={120}>

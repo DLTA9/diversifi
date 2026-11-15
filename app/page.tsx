@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, ContractRow } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, FOOTNOTE, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
@@ -87,7 +87,6 @@ export default async function Home() {
             <a href={rmUrl} target="_blank" rel="noopener" className={s.proofCell}><span className="label">LIVE SINCE</span><span>SEP 2025</span></a>
             <a href="#reserve" className={s.proofCell}><span className="label">RESERVES</span><span>ON-CHAIN, VIEWABLE ANY TIME</span></a>
           </div>
-          <div className="wrap" style={{ paddingBottom: 24 }}><p className="foot" style={{ maxWidth: '72em' }}>{FOOTNOTE}</p></div>
         </section>
 
         {/* 03 HOW IT WORKS: no visible headline, intentionally; the H2 is for outline and crawlers. */}
