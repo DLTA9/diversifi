@@ -15,11 +15,13 @@ type Props = {
   mode?: ReserveMode;
   /** Hold the settle animation until true (the hero waits for its ring intro). */
   start?: boolean;
+  /** Default readout shows whether the basket is on target and how many issuers back it (the app's swap page). */
+  status?: boolean;
 };
 
 const BAR_H = { lg: 72, md: 40, sm: 12 };
 
-export function ReserveBar({ size = 'md', readout = false, showTotal = true, animate = true, mode: modeProp, start = true }: Props) {
+export function ReserveBar({ size = 'md', readout = false, showTotal = true, animate = true, mode: modeProp, start = true, status = false }: Props) {
   const { reading, mode: ctxMode } = useReserve();
   const mode = modeProp ?? ctxMode;
   const loading = mode === 'loading';
@@ -71,12 +73,17 @@ export function ReserveBar({ size = 'md', readout = false, showTotal = true, ani
   const tickerFs = minCol < 36 ? 11 : size === 'lg' ? 13 : 12;
   const shareFs = minCol < 36 ? 13 : minCol < 48 ? 16 : size === 'lg' ? 24 : 16;
   const asOf = hhmm(reading.readAt) + ' UTC';
+  // Balanced when every coin is within 0.05 percentage points of its target; issuers counted from the coin list (DAI and USDS share one).
+  const balanced = data.every(c => Math.abs(c.current - c.target) < 0.05);
+  const issuers = new Set(COINS.map(c => c.issuer)).size;
 
   const h = hover >= 0 && !loading ? hover : -1;
   const hc = h >= 0 ? data[h] : null;
   const rd = hc
     ? { label: hc.t, color: COINS[h].color, value: hc.current.toFixed(1) + '%', scope: (showTotal ? fmtK(hc.held) + ' held · ' : '') + 'target ' + hc.target.toFixed(1) + '% · as of ' + asOf }
-    : { label: 'RESERVE', color: '', value: loading ? '—' : showTotal ? fmtK(reading.total) : 'multi-issuer', scope: loading ? 'reading the reserve contract' : (showTotal ? 'every basket coin' : 'no single issuer') + ' · as of ' + asOf };
+    : status
+      ? { label: 'RESERVE STATUS', color: '', value: loading ? '—' : balanced ? 'balanced' : 'off target', scope: loading ? 'reading the reserve contract' : `${issuers} issuers · as of ${asOf}` }
+      : { label: 'RESERVE', color: '', value: loading ? '—' : showTotal ? fmtK(reading.total) : 'multi-issuer', scope: loading ? 'reading the reserve contract' : (showTotal ? 'every basket coin' : 'no single issuer') + ' · as of ' + asOf };
 
   const onSegClick = (i: number) => (e: React.MouseEvent) => {
     // Touch: first tap shows the readout, second follows the link.

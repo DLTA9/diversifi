@@ -655,8 +655,7 @@ export function AppFlow() {
             <>
               <div className="rail"><span>BACKING</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg)' }}><span className="livedot" />LIVE · {hhmm(reading.readAt)} UTC</span></div>
               <p style={{ fontSize: 'clamp(20px, 2vw, 24px)', lineHeight: 1.15, letterSpacing: '-0.02em' }}>every DFiUSD is backed by the whole basket.</p>
-              <ReserveBar size="md" readout showTotal={false} />
-              <p className="dim pretty" style={{ fontSize: 14 }}>Whichever coin you swap with, the DFiUSD you get is backed by the whole basket.</p>
+              <ReserveBar size="md" readout showTotal={false} status />
               <Link href="/#reserve" style={{ fontSize: 15 }}>check the reserve →</Link>
             </>
           )}
