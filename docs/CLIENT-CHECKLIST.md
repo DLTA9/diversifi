@@ -10,9 +10,7 @@ Plain-language version. Prices checked 15 Nov 2026; they can change.
 |---|---|---|---|---|
 | 1 | Make an **Alchemy** account and key (alchemy.com), and store it in Cloudflare as a secret called `RPC_URL` | A reliable "phone line" to the blockchain, so live numbers never fail. Also gives each wallet's history. | 5 min | free |
 | 2 | Make a **Reown (WalletConnect)** project (cloud.reown.com), lock it to diversifi.tech, put the ID in Cloudflare | Phone wallets can connect with a QR code | 5 min | free |
-| 3 | Turn on **DNSSEC** for diversifi.tech in Cloudflare | Makes it much harder to hijack the web address | 1 min | free |
-| 4 | Add **CAA records** in Cloudflare | Only approved companies can make security certificates for the site | 2 min | free |
-| 5 | Check **auto-renew** for the domain (expires 1 May 2027) | Don't lose the address | 1 min | – |
+| 3–5 | **DNSSEC, CAA records, auto-renew** for diversifi.tech | Protects the web address | – | **Moved to launch.** The domain sits in the client's Cloudflare, not ours. See part 2, question E. |
 | 6 | Turn on **Cloudflare alerts** for DNS changes, new members and deploys | We hear about anything strange at once | 5 min | free |
 | 7 | GitHub: **protect the main branch**, turn on secret scanning and Dependabot alerts | Stops accidental or sneaky changes | 5 min | free |
 | 8 | Put the **whitepaper and audit PDFs** into the website itself | Links keep working after the domain moves | 2 min | – |
@@ -21,18 +19,17 @@ Plain-language version. Prices checked 15 Nov 2026; they can change.
 
 ---
 
-## Part 2: what ONLY the client can give us
+## Part 2: client decisions (answered 15 Nov 2026)
 
-These don't stop us building; we use a safe default until they answer.
-
-| # | Question for the client | Our default until they answer |
+| # | Question | Client's answer → what we build |
 |---|---|---|
-| A | **Who is allowed to mint and redeem on the website?** Their own terms say only checked (KYC), approved customers, and nobody from the US. The contract lets anyone. Pick one: (a) "accept the terms" box only, (b) + block the US and sanctioned countries, (c) + check wallets against sanctions lists, (d) only approved wallets. | (b): terms box + country blocking, switchable later |
-| B | **Will they put money in the rebalancing reward pool**, how much, and when? Only their admin (the timelock) can do this. | The site shows "pool empty right now" |
-| C | **Budget for an outside security review** of the website before launch (roughly $5,000–$30,000) | We still do all our own checks and testing |
-| D | Everyone on their side with Cloudflare or GitHub access uses **2-step login, ideally a USB security key** | – |
-
-Nice to confirm, not blocking: the company name to show on the site (their terms say "Diversifi Stables, Inc.") and whether they want their own swap fee on top of Uniswap's 0.01%.
+| A | Who may mint, redeem and swap on the website? | **Everyone except US persons.** Show the standard "accept the terms" step, with a line confirming the user is not a US person. No KYC, whitelist or wallet screening. |
+| B | Reward pool for rebalancing? | **Rewards will come later; none for now.** The site shows the pool as empty; the reward line appears once it's funded. |
+| C | Outside security review? | **No.** We do all checks ourselves: simulation, fork tests, a testnet run and a small mainnet run. |
+| D | 2-step login for their team? | **Done.** |
+| E | Domain protection (DNSSEC, CAA, auto-renew) | **At go-live**, when the domain moves over. |
+| – | Company name on the site? | **No company name** on the website. |
+| – | Extra swap fee? | **None.** The old app adds no fee (Uniswap pool fee 0.01% only), so neither do we. |
 
 ---
 
@@ -55,7 +52,7 @@ Nice to confirm, not blocking: the company name to show on the site (their terms
 |---|---|---|
 | USB security keys (YubiKey), 2 per person | ~$50–60 each | strongly recommended |
 | Test money | ~$60, mostly returned | yes |
-| Outside security review | ~$5,000–$30,000 | strongly recommended (client's budget) |
+| Outside security review | ~$5,000–$30,000 | declined by the client |
 | Sanctions screening service | maybe free (Chainalysis, to confirm) / paid tools thousands per year | only if the client picks option (c) |
 
 No server rent, no database, no paid wallet software.

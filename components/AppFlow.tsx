@@ -331,9 +331,25 @@ export function AppFlow() {
     if (m && !isConnected) connect({ connector: m, chainId: 1 });
   }, [connectors, isConnected, connect]);
 
+  // A wallet that fails to connect (QR code expired, request closed, wallet not installed) shows a calm message, not an error.
+  const connectFailed = useCallback((e: unknown) => {
+    const msg = String((e as { message?: string })?.message ?? e).toLowerCase();
+    if (msg.includes('expired')) showToast({ color: 'var(--warn)', text: 'the QR code expired. tap WalletConnect to get a new one.', word: 'EXPIRED' }, 6000);
+    else if (isRejection(e) || msg.includes('reject') || msg.includes('closed')) showToast({ color: 'var(--dim)', text: 'connection cancelled.', word: 'CANCELLED' }, 4000);
+    else showToast({ color: 'var(--crit)', text: 'couldn’t connect that wallet. try again or pick another.', word: 'FAILED' }, 6000);
+  }, []);
+  // WalletConnect also rejects an expired pairing outside our call; catch that one here so it never shows as a crash.
+  useEffect(() => {
+    const onReject = (ev: PromiseRejectionEvent) => {
+      if (String(ev.reason?.message ?? ev.reason).includes('Proposal expired')) { ev.preventDefault(); connectFailed(ev.reason); }
+    };
+    window.addEventListener('unhandledrejection', onReject);
+    return () => window.removeEventListener('unhandledrejection', onReject);
+  }, [connectFailed]);
+
   const pick = (id: string) => {
     const c = connectors.find(k => k.id === id);
-    if (c) connect({ connector: c, chainId: 1 });
+    if (c) connect({ connector: c, chainId: 1 }, { onError: connectFailed });
     // WalletConnect without a project ID has no connector yet.
     else showToast({ color: 'var(--warn)', text: 'WalletConnect is being switched on. Use MetaMask or Coinbase Wallet for now.', word: 'SOON' }, 5000);
   };

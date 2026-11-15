@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# public build-time settings are committed on purpose (no secrets in them)
+!.env.production
+!.env.development
 
 # vercel
 .vercel

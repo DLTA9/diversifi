@@ -125,14 +125,12 @@ Actions (we do 2–5 ourselves in Cloudflare and GitHub; item 1 applies to every
 5. GitHub: branch protection on `main`, 2FA required, secret scanning on.
 6. A one-page incident runbook: who to call, how to flip the kill switch, how to post on X.
 
-### 3.4 Compliance (decision for the client)
-The DFiUSD Terms and Mint User Agreement say direct mint and redeem with DSI is for **KYC-cleared, whitelisted Mint Users**, **US users are not eligible**, and services use IP geofencing. The contracts themselves are permissionless.
-
-The client must decide what the front end enforces before mint and redeem go live. Until they answer, we build "accept the terms" plus blocking the US and sanctioned countries (Cloudflare tells us each visitor's country), switchable by a setting. The options:
-- terms acceptance
-- geo-blocking
-- wallet sanctions screening (e.g. Chainalysis or TRM)
-- a whitelist check
+### 3.4 Compliance (decided 15 Nov 2026)
+Client decision: **everyone except US persons.**
+- Before a first swap, mint or redeem, show a one-time "accept the terms" step with the standard line, e.g. "I confirm I am not a US person and not in a restricted jurisdiction, and I accept the Terms."
+- Remember acceptance per wallet in local storage, and link the terms.
+- No KYC, whitelist or wallet sanctions screening.
+- IP geo-blocking: not requested. Cloudflare's country header makes it available if they change their mind.
 
 ---
 
@@ -164,10 +162,13 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - PDFs into `public/docs/`
      - check the subgraph owner on The Graph Explorer
      - a small test wallet of our own
-   - **Needs the client** (can run in parallel; doesn't block steps 1–4):
-     - the mint/redeem gating decision (3.4). Until it comes, build "accept the terms" plus country blocking as the safe default, behind a setting.
-     - whether and how they fund the reward pool (an admin/timelock action only they can take)
-     - budget for an outside review
+   - **Client decisions (answered 15 Nov):**
+     - terms acceptance with a not-a-US-person line (3.4)
+     - no rewards for now
+     - no outside review
+     - no company name on the site
+     - no extra swap fee (the old app adds none)
+     - domain protection at go-live
 1. **Foundation:** contract registry + runtime checks, pinned ABIs from verified sources, chain guard, kill switch, security headers/CSP, dependency upgrade.
 2. **Reads:** dynamic asset list, helper quotes, bounty/discrepancy, peg price, activity via indexer.
 3. **Writes**, in this order, each with simulate → review → sign → receipt:
@@ -182,8 +183,8 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - Playwright end-to-end tests on the fork with the mock connector
    - Sepolia run
    - small-amount mainnet run with our own test wallet (~$50 stablecoins + ~$10 ETH, mostly returned)
-   - an outside review of the transaction-building code before public launch
-5. **Launch hardening:** DNS items (3.3), monitoring, runbook, then point diversifi.tech at the new Worker.
+   - outside review declined by the client, so our own simulation, fork and testnet checks must be thorough
+5. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
 
 ---
 
