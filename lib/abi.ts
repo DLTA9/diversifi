@@ -18,6 +18,8 @@ export const reserveManagerAbi = parseAbi([
   'function swapTowardsTarget(address _asset, int256 _delta) returns (uint256 reserveTransfer, uint256 indexTransfer)',
   'function getEqualizationBounty() view returns (uint256)',
   'function getTotalReservesDiscrepencyScaled() view returns (uint256)',
+  'function getIndexToken() view returns (address)',
+  'function isEmigrating() view returns (bool)',
 ]);
 
 export const erc20Abi = parseAbi([
@@ -25,4 +27,11 @@ export const erc20Abi = parseAbi([
   'function allowance(address owner, address spender) view returns (uint256)',
   'function totalSupply() view returns (uint256)',
   'function approve(address spender, uint256 value) returns (bool)',
+]);
+
+// DFiUSD (IndexToken) reads used by the safety checks.
+export const indexTokenAbi = parseAbi([
+  'function getReserveManager() view returns (address)',
+  'function isMigrating() view returns (bool)',
+  'function isFrozen(address account) view returns (bool)',
 ]);

@@ -144,3 +144,6 @@
 .boxMix .mixRow:last-child { border-bottom: 0; }
 .box .fieldHead { gap: 12px; }
 .box .flabel { white-space: nowrap; }
+/* shown when a safety check blocks transactions (lib/guard.ts) */
+.guardBanner { margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--crit); border-radius: 8px; font-size: 14px; line-height: 1.5; color: var(--fg); background: color-mix(in srgb, var(--crit) 10%, transparent); }
+.guardBanner strong { font-weight: 600; color: var(--crit); }

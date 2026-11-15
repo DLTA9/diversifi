@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseAbiItem, zeroAddress, type Address, type Hash } from 'viem';
 import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
-import { erc20Abi, reserveManagerAbi } from '@/lib/abi';
+import { erc20Abi, indexTokenAbi, reserveManagerAbi } from '@/lib/abi';
+import { CHAIN_ID, evaluateGuard, TRUSTED, type GuardInput } from '@/lib/guard';
 import { COINS, DEPLOY_TX, ETHERSCAN, FOOTNOTE, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
 import { burnPayout, maxMint, mintDeposits, parseAmount, toNum, type TargetParam } from '@/lib/flow';
 import { f2, hhmm, type ReserveReading } from '@/lib/reserve';
@@ -155,6 +156,40 @@ export function AppFlow() {
     ],
   });
   const reads = { refetch: () => { params.refetch(); wallet.refetch(); } };
+
+  /* ---------- safety checks (lib/guard.ts): genuine contracts, no migration, known coins, wallet not frozen, not paused ---------- */
+  const guardReads = useReadContracts({
+    allowFailure: true,
+    query: { enabled: mounted, refetchInterval: 60_000 },
+    contracts: [
+      { address: TRUSTED.reserveManager, abi: reserveManagerAbi, functionName: 'getIndexToken', chainId: CHAIN_ID },
+      { address: TRUSTED.reserveManager, abi: reserveManagerAbi, functionName: 'isEmigrating', chainId: CHAIN_ID },
+      { address: TRUSTED.token, abi: indexTokenAbi, functionName: 'getReserveManager', chainId: CHAIN_ID },
+      { address: TRUSTED.token, abi: indexTokenAbi, functionName: 'isMigrating', chainId: CHAIN_ID },
+      { address: TRUSTED.token, abi: indexTokenAbi, functionName: 'isFrozen', args: [user], chainId: CHAIN_ID },
+    ],
+  });
+  const [pause, setPause] = useState<{ paused: boolean; message: string } | null>(null);
+  const loadPause = useCallback(async () => {
+    try {
+      const r = await fetch('/api/status', { cache: 'no-store' });
+      const j = (await r.json()) as { paused: boolean; message: string };
+      setPause(j);
+      return j;
+    } catch { const j = { paused: true, message: 'We couldn’t check the app status, so transactions are switched off for now.' }; setPause(j); return j; }
+  }, []);
+  useEffect(() => { loadPause(); const iv = window.setInterval(loadPause, 60_000); return () => clearInterval(iv); }, [loadPause]);
+  const guardInput = (gr: typeof guardReads.data, p: typeof pause): GuardInput => {
+    const v = <T,>(i: number): T | null | undefined => (!gr ? undefined : gr[i]?.status === 'success' ? (gr[i].result as T) : null);
+    return {
+      indexToken: v(0), emigrating: v(1), tokenReserveManager: v(2), migrating: v(3),
+      frozen: address ? v<boolean>(4) ?? false : false,
+      targetAssets: params.data ? (params.data[0] as readonly TargetParam[]).map(p => p.assetAddress) : params.isError ? null : undefined,
+      paused: p?.paused, pauseMessage: p?.message,
+    };
+  };
+  const guard = evaluateGuard(guardInput(guardReads.data, pause));
+  const safe = guard.state === 'ok';
   const [targets, compFeeQ, mintFeeQ, burnFeeQ, mintEnabledRead, bountyRaw] = params.data ?? [[] as readonly TargetParam[], 0n, 0n, 0n, undefined, 0n];
   const mintEnabled = mintEnabledRead ?? reading.mintEnabled;
   const w = (wallet.data ?? []) as readonly bigint[];
@@ -259,10 +294,19 @@ export function AppFlow() {
   useEffect(() => { if (connected && !wrongNet) loadHistory(); else setHistory([]); }, [connected, wrongNet, loadHistory]);
 
   /* ---------- write flow ---------- */
-  const canReview = rebValid || valid;
+  const canReview = (rebValid || valid) && safe;
+  // Re-run every safety check right before the wallet opens: network, pause switch, contracts. Returns a reason to stop, or ''.
+  const preflight = async () => {
+    if (chainId !== CHAIN_ID) return 'Your wallet is not on Ethereum mainnet. Switch networks and try again.';
+    const [p, g] = await Promise.all([loadPause(), guardReads.refetch()]);
+    const fresh = evaluateGuard(guardInput(g.data, p));
+    return fresh.state === 'ok' ? '' : fresh.reason;
+  };
   const confirm = async () => {
     if (!canReview || !raw || !client) return;
     setPending(true); setRejected(false); setFailed('');
+    const stop = await preflight();
+    if (stop) { setFailed(stop); setPending(false); showToast({ color: 'var(--crit)', text: 'stopped before signing: safety check failed.', word: 'STOPPED' }, 6000); return; }
     const waitTx = async (hash: Hash) => { await client.waitForTransactionReceipt({ hash }); return hash; };
     // USDT reverts on changing a non-zero allowance; reset it first.
     const approve = async (i: number, units: bigint) => {
@@ -449,6 +493,10 @@ export function AppFlow() {
             </div>
           )}
 
+          {view !== 'connect' && guard.state === 'blocked' && (
+            <p role="alert" className={s.guardBanner}><strong>transactions are switched off.</strong> {guard.reason}</p>
+          )}
+
           {view === 'amount' && (
             <div className={s.col}>
               <div role="tablist" aria-label="mode" className={s.tabs}>
@@ -569,7 +617,7 @@ export function AppFlow() {
                         <div><dt>your reward</dt><dd className="mono" style={{ color: reward > 0 ? 'var(--ok)' : undefined }}>{reward > 0 ? (dir === 'mint' ? `+ ${f2(reward)} DFiUSD` : `${f2(reward)} DFiUSD less to give`) : bounty > 0 ? '—' : 'pool empty right now'}</dd></div>
                         <div><dt>reward pool</dt><dd className="mono">{f2(bounty)} DFiUSD</dd></div>
                       </dl>
-                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid} onClick={() => rebValid && setStep('review')}>review {dir === 'mint' ? 'mint' : 'redeem'}</button>
+                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid || !safe} onClick={() => rebValid && safe && setStep('review')}>review {dir === 'mint' ? 'mint' : 'redeem'}</button>
                     </fieldset>
                   )}
 
@@ -607,7 +655,7 @@ export function AppFlow() {
                         <div><dt>{isMint ? 'mint fee' : 'redeem fee'}</dt><dd className="mono">{feeText}</dd></div>
                         {isMint && <div><dt>approvals</dt><dd className="mono">{valid ? (approvalsNeeded ? `${approvalsNeeded} of ${COINS.length} coins` : 'none needed') : '—'}</dd></div>}
                       </dl>
-                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!valid} onClick={() => valid && setStep('review')}>review {isMint ? 'mint' : 'redeem'}</button>
+                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!valid || !safe} onClick={() => valid && safe && setStep('review')}>review {isMint ? 'mint' : 'redeem'}</button>
                     </>
                   )}
                 </>
