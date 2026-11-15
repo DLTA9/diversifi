@@ -123,7 +123,7 @@ export function ReservePanel() {
           {live && <span className="livedot" />}{rail.text}
         </span>
       </div>
-      <p className="h3">7 stablecoins, no single issuer.</p>
+      <p className="h3">a basket of stablecoins, no single issuer.</p>
       {mode === 'unavailable' && <p className="small">reserve data couldn&apos;t load. <span className="dim">last reading {lastAt} UTC.</span></p>}
       <div style={{ position: 'relative' }}>
         <div style={{ opacity: intro >= 2 ? 1 : 0, transition: 'opacity 500ms' }}>
@@ -156,7 +156,7 @@ export function ReservePanel() {
   );
 }
 
-/* ---------- 03 mint diagram: cycles the seven coins ---------- */
+/* ---------- 03 mint diagram: cycles through the basket coins ---------- */
 function useMintCycle() {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
@@ -173,7 +173,7 @@ export function MintDots() {
   return (
     <>
       <div className={s.diaHead}>
-        <span className="label-sm">DEPOSIT ANY OF THE SEVEN</span>
+        <span className="label-sm">DEPOSIT BASKET COINS</span>
         <span style={{ display: 'flex', gap: 3 }}>{COINS.map((k, i) => <i key={k.t} className={s.mintDot} style={{ background: k.color, opacity: i === idx ? 1 : 0.28 }} />)}</span>
       </div>
       <div className={s.diaRow}>
@@ -265,8 +265,8 @@ export function ReserveSection() {
 
 /* ---------- 05 issuer-fails explainer: animation is the main element ---------- */
 const FAIL_STEPS = [
-  { title: 'the loss stays in its slice.', body: 'A failing coin affects only its share of the backing. The other six coins sit in the reserve as before.', short: 'The loss stays in its slice. The other six are untouched.' },
-  { title: 'its target is set to 0%.', body: "The failing coin's target share can be set to 0%. The other six targets take up its share.", short: 'Its target is set to 0%. The other six take up its share.' },
+  { title: 'the loss stays in its slice.', body: 'A failing coin affects only its share of the backing. The other coins sit in the reserve as before.', short: 'The loss stays in its slice. The other coins are untouched.' },
+  { title: 'its target is set to 0%.', body: "The failing coin's target share can be set to 0%. The other targets take up its share.", short: 'Its target is set to 0%. The other coins take up its share.' },
   { title: 'swaps only run toward target.', body: 'Each swap moves the reserve closer to the new target, so the failing coin is pushed out over time.', short: 'Swaps only run toward target, pushing the coin out.' },
   { title: 'minting can be paused.', body: 'New mints can be stopped while the failing coin is still in the reserve.', short: 'New mints can pause while the coin is still held.' },
 ];

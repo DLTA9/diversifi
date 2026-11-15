@@ -11,7 +11,7 @@ export const SAME_AS = [X_URL, DOCS_URL];
 export const CONTACT_EMAIL = CONTACT_MAIL.replace(/^mailto:/, '');
 
 // Per-page Open Graph block. Next.js replaces (not merges) a parent's openGraph, so the image is repeated here.
-export const OG_IMAGE = { url: '/og-1200x630.png', width: 1200, height: 630, alt: 'DiversiFi · one token, seven stablecoins underneath.' };
+export const OG_IMAGE = { url: '/og-1200x630.png', width: 1200, height: 630, alt: 'DiversiFi · one token, a basket of stablecoins underneath.' };
 export const og = (path: string, title: string, description = SITE_DESC) =>
   ({ type: 'website' as const, url: path, siteName: SITE_NAME, title, description, images: [OG_IMAGE] });
 

@@ -97,7 +97,7 @@ export default async function Home() {
             <article className={s.card}>
               <div className={s.cardHead}><span className={s.num}>01</span><h3 className="h3">mint</h3></div>
               <div aria-hidden="true" className={s.dia}><MintDots /></div>
-              {/* TODO(open item 1): copy assumes single-coin mint; the contract's mint takes all seven. */}
+              {/* TODO(open item 1): copy assumes single-coin mint; the contract's mint takes the full basket. */}
               <p className="dim pretty">Deposit a basket stablecoin and receive DFiUSD. The deposit enters the reserve at the target split.</p>
             </article>
             <article className={s.card}>
@@ -107,7 +107,7 @@ export default async function Home() {
                 <div className={s.diaRow}>
                   <DfiChip />
                   <span className="mono dim">→</span>
-                  <div className={s.diaCol}><MiniBar /><span className="label-sm" style={{ letterSpacing: '.02em', whiteSpace: 'nowrap' }}>BACKED BY ALL SEVEN</span></div>
+                  <div className={s.diaCol}><MiniBar /><span className="label-sm" style={{ letterSpacing: '.02em', whiteSpace: 'nowrap' }}>BACKED BY THE WHOLE BASKET</span></div>
                 </div>
               </div>
               {/* TODO(open item 2): "plain ERC-20" is inaccurate (rebasing, freezable). Reword with compliance. */}
@@ -203,7 +203,7 @@ export default async function Home() {
             <Ruler ticks={41} />
             <div className={s.finalGrid}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <span className="label">ONE TOKEN · SEVEN STABLECOINS UNDERNEATH</span>
+                <span className="label">ONE TOKEN · A BASKET OF STABLECOINS UNDERNEATH</span>
                 <nav aria-label="resources" className={s.resLinks}>
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
@@ -258,7 +258,7 @@ const GUARDS = [
   },
   {
     title: "a frozen coin can't trap the rest.",
-    body: 'If one coin can’t move, emergency mode still releases the other six.',
+    body: 'If one coin can’t move, emergency mode still releases the rest.',
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
         {EVEN7.map((_, i) => <i key={i} className={s.blk} style={i === 3 ? blk(24, 'transparent', { border: '1.5px dashed var(--crit)' }) : blk(24, 'var(--fg)')} />)}

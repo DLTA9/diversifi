@@ -26,7 +26,7 @@ export async function GET() {
   const body = [
     '# DiversiFi',
     '',
-    '> DiversiFi issues DFiUSD, a USD stablecoin on Ethereum backed 1:1 by a basket of seven USD stablecoins (USDC, DAI, USDS, USDT, GHO, FDUSD, frxUSD) held in the ReserveManagerV1 smart contract. Spreading the backing across issuers means one failing stablecoin only affects its share of the reserve. Every balance is readable on-chain.',
+    `> DiversiFi issues DFiUSD, a USD stablecoin on Ethereum backed 1:1 by a basket of USD stablecoins (currently ${COINS.map(c => c.t).join(', ')}) held in the ReserveManagerV1 smart contract. Spreading the backing across issuers means one failing stablecoin only affects its share of the reserve. Every balance is readable on-chain.`,
     '',
     '## Key facts',
     '',

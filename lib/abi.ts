@@ -14,6 +14,10 @@ export const reserveManagerAbi = parseAbi([
   'function getMaxReserves() view returns (uint256)',
   'function mint(uint256 _mintAmount, bytes _forwardData)',
   'function burn(uint256 _burnAmount, bool _unsafe, bytes _forwardData)',
+  // Rebalancing: deposit (+delta) or withdraw (−delta) one coin, only toward its target share. Pays the reward pool share.
+  'function swapTowardsTarget(address _asset, int256 _delta) returns (uint256 reserveTransfer, uint256 indexTransfer)',
+  'function getEqualizationBounty() view returns (uint256)',
+  'function getTotalReservesDiscrepencyScaled() view returns (uint256)',
 ]);
 
 export const erc20Abi = parseAbi([

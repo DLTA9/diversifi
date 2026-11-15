@@ -27,7 +27,8 @@ const RPCS = [
   typeof window === 'undefined' ? process.env.RPC_URL : undefined,
   process.env.NEXT_PUBLIC_RPC_URL,
   'https://ethereum-rpc.publicnode.com',
-  'https://eth.llamarpc.com',
+  // llamarpc rejects browser requests (no CORS headers), so only the server uses it.
+  typeof window === 'undefined' ? 'https://eth.llamarpc.com' : undefined,
 ].filter((u): u is string => !!u);
 export const rpcTransport = fallback(RPCS.map(u => http(u, { timeout: 4_000, retryCount: 1 })));
 

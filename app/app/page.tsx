@@ -9,9 +9,9 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Mint and redeem DFiUSD',
-  description: 'Mint DFiUSD against the seven-coin reserve or redeem it for the current mix, from your own wallet on Ethereum mainnet.',
+  description: 'Swap, mint or redeem DFiUSD against its multi-stablecoin reserve, from your own wallet on Ethereum mainnet.',
   alternates: { canonical: '/app' },
-  openGraph: og('/app', 'Mint and redeem DFiUSD · DiversiFi', 'Mint DFiUSD against the seven-coin reserve or redeem it for the current mix, from your own wallet on Ethereum mainnet.'),
+  openGraph: og('/app', 'Mint and redeem DFiUSD · DiversiFi', 'Swap, mint or redeem DFiUSD against its multi-stablecoin reserve, from your own wallet on Ethereum mainnet.'),
 };
 
 export default async function AppPage() {

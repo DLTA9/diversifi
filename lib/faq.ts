@@ -28,7 +28,7 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
   return [
     {
       q: 'what is DFiUSD?',
-      a: [`DFiUSD is a USD stablecoin on Ethereum, issued by DiversiFi. Each DFiUSD is backed 1:1 by a basket of seven USD stablecoins (${list(COINS.map(c => c.t))}) held in the ReserveManagerV1 smart contract, so no single issuer backs the whole token.`],
+      a: [`DFiUSD is a USD stablecoin on Ethereum, issued by DiversiFi. Each DFiUSD is backed 1:1 by a basket of USD stablecoins (currently ${list(COINS.map(c => c.t))}) held in the ReserveManagerV1 smart contract, so no single issuer backs the whole token.`],
     },
     {
       q: 'what is a diversified stablecoin?',
@@ -36,7 +36,7 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
     },
     {
       q: 'what is DFiUSD backed by?',
-      a: [`Seven USD stablecoins from six issuers, held on Ethereum at a target split of ${split(r)}. Every balance is readable on-chain.`],
+      a: [`A basket of USD stablecoins from several issuers, held on Ethereum. The current target split is ${split(r)}. Governance can add or remove coins and change the split; every balance is readable on-chain.`],
     },
     {
       q: 'what happens if a stablecoin in the basket depegs?',
@@ -57,7 +57,7 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
     },
     {
       q: 'how do I redeem DFiUSD?',
-      a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: '/app' }, ' and burn DFiUSD. You receive the reserve’s current mix of all seven coins, less any redeem fee, not a single coin.'],
+      a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: '/app' }, ' and burn DFiUSD. You receive the reserve’s current mix of every coin in the basket, less any redeem fee, or swap it for a single coin.'],
     },
     {
       q: 'what are the risks of holding DFiUSD?',

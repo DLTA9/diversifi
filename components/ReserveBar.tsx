@@ -76,7 +76,7 @@ export function ReserveBar({ size = 'md', readout = false, showTotal = true, ani
   const hc = h >= 0 ? data[h] : null;
   const rd = hc
     ? { label: hc.t, color: COINS[h].color, value: hc.current.toFixed(1) + '%', scope: (showTotal ? fmtK(hc.held) + ' held · ' : '') + 'target ' + hc.target.toFixed(1) + '% · as of ' + asOf }
-    : { label: 'RESERVE', color: '', value: loading ? '—' : showTotal ? fmtK(reading.total) : '7 coins', scope: loading ? 'reading the reserve contract' : (showTotal ? 'all seven coins' : 'no single issuer') + ' · as of ' + asOf };
+    : { label: 'RESERVE', color: '', value: loading ? '—' : showTotal ? fmtK(reading.total) : 'multi-issuer', scope: loading ? 'reading the reserve contract' : (showTotal ? 'every basket coin' : 'no single issuer') + ' · as of ' + asOf };
 
   const onSegClick = (i: number) => (e: React.MouseEvent) => {
     // Touch: first tap shows the readout, second follows the link.

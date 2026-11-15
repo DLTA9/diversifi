@@ -45,7 +45,7 @@ export function DfiChip({ size = 16, className = 'chip' }: { size?: number; clas
   return <span className={className} style={{ fontWeight: 600 }}><TokenIcon size={size} />DFiUSD</span>;
 }
 
-/** Static seven-coin bar at the target split, for diagrams. */
+/** Static basket bar at the target split, for diagrams. */
 export function MiniBar({ height = 14, gap = 2, radius = 2, width }: { height?: number; gap?: number; radius?: number; width?: number }) {
   return (
     <span aria-hidden="true" className="minibar" style={{ height, gap, width, display: 'flex' }}>

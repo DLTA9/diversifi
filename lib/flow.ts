@@ -40,7 +40,7 @@ export function parseAmount(v: string): bigint | null {
 
 export const toNum = (v: bigint, decimals: number) => Number(v) / 10 ** decimals;
 
-/** Largest mint (18 dec) the wallet's seven balances can cover, floored to cents. */
+/** Largest mint (18 dec) the wallet's basket balances can cover, floored to cents. */
 export function maxMint(balances: bigint[], targets: readonly TargetParam[], compoundingFeeQ96: bigint): bigint {
   const one = mintDeposits(E18 * 1000n, targets, compoundingFeeQ96); // deposits per 1000 DFiUSD
   let best: bigint | null = null;
