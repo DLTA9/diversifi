@@ -170,7 +170,14 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - no extra swap fee (the old app adds none)
      - domain protection at go-live
 1. **Foundation:** contract registry + runtime checks, pinned ABIs from verified sources, chain guard, kill switch, security headers/CSP, dependency upgrade.
-2. **Reads:** dynamic asset list, helper quotes, bounty/discrepancy, peg price, activity via indexer.
+2. **Reads: done (15 Nov 2026).**
+   - exact basket quotes from ReserveManagerHelpers
+   - exact rebalance limits and reward: `lib/rebalance.ts` copies the contract maths, tested against the live contract at the limit (+1 unit rejected) for every coin and both directions
+   - live V4 swap quote, price impact and pool price: `lib/uniswap.ts`
+   - DFiUSD market price from the USDC pool
+   - wallet history via `/api/activity` (Alchemy Transfers API, server side, 60 s edge cache)
+   - the coin list and each coin's decimals are checked against the chain, and an unknown coin switches transactions off. The list stays in code on purpose, since a new coin needs a colour, issuer and review, and the 7-day timelock gives a week's notice.
+   - local testing of the worker reads secrets from `web/.dev.vars`, which git ignores
 3. **Writes**, in this order, each with simulate → review → sign → receipt:
    1. **swap** (Universal Router + Permit2, both directions, all seven coins): most users will use this, and it already works on the old site
    2. full-basket mint and redeem
@@ -190,7 +197,6 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
 
 ## 6. Things in the current repo to fix during integration
 - `lib/coins.ts`: hardcoded asset list and order. Replace with the on-chain list + registry.
-- `components/AppFlow.tsx`: reward is an estimate. Replace with simulation results.
 - `lib/abi.ts`: `approve` declared `returns (bool)`, which breaks simulation for USDT.
 - `lib/wagmi.ts`: `multiInjectedProviderDiscovery: false` and a MetaMask-only injected target. Enable EIP-6963 so Rabby and other browser wallets appear by name.
 - No security headers yet. Add in `middleware.ts`.

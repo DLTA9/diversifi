@@ -22,6 +22,24 @@ export const reserveManagerAbi = parseAbi([
   'function isEmigrating() view returns (bool)',
 ]);
 
+// ReserveManagerHelpers: what mint() will pull and burn() will pay, to the last unit.
+export const helpersAbi = parseAbi([
+  'struct AssetAmount { address assetAddress; uint256 amount; }',
+  'function quoteMint(uint256 mintAmount) view returns (AssetAmount[] inputAmounts, uint256 fee)',
+  'function quoteBurn(uint256 burnAmount) view returns (AssetAmount[] outputAmounts, uint256 fee)',
+]);
+
+// Uniswap V4. The quoter is not a view function on-chain (it simulates the swap and reverts with the result),
+// but it is only ever called with eth_call, so it is declared view here to read it like any other value.
+export const v4QuoterAbi = parseAbi([
+  'struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }',
+  'struct QuoteExactSingleParams { PoolKey poolKey; bool zeroForOne; uint128 exactAmount; bytes hookData; }',
+  'function quoteExactInputSingle(QuoteExactSingleParams params) view returns (uint256 amountOut, uint256 gasEstimate)',
+]);
+export const stateViewAbi = parseAbi([
+  'function getSlot0(bytes32 poolId) view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)',
+]);
+
 export const erc20Abi = parseAbi([
   'function balanceOf(address account) view returns (uint256)',
   'function allowance(address owner, address spender) view returns (uint256)',

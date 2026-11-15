@@ -24,6 +24,10 @@ export const COINS: Coin[] = [
 export const RM_ADDR = '0x8978F3A0227453Dd0821bC8A85e4bEF96DAF8327' as const;
 export const TOKEN_ADDR = '0xDF100b8ABd3cd41fC5cC1236AD7c6629A901AfBf' as const;
 export const DEPLOY_TX = '0x238261145dca828c5b7ecdce77975a4f66faf8ae38a2b91f803063675468e8d3';
+/** Block DFiUSD was deployed in (Sourcify). Wallet history starts here. */
+export const DEPLOY_BLOCK = 23_343_879;
+/** ReserveManagerHelpers: exact quoteMint / quoteBurn amounts (Sourcify exact match). */
+export const HELPERS_ADDR = '0x3E706f1D975BF76e259939Bd741C36A88A6F0D13' as const;
 
 export const ETHERSCAN = 'https://etherscan.io';
 export const rmUrl = `${ETHERSCAN}/address/${RM_ADDR}`;

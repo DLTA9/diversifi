@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { parseAbiItem, zeroAddress, type Address, type Hash } from 'viem';
-import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
-import { erc20Abi, indexTokenAbi, reserveManagerAbi } from '@/lib/abi';
+import { zeroAddress, type Address, type ContractFunctionParameters, type Hash } from 'viem';
+import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContract, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
+import { erc20Abi, helpersAbi, indexTokenAbi, reserveManagerAbi, stateViewAbi, v4QuoterAbi } from '@/lib/abi';
 import { CHAIN_ID, evaluateGuard, TRUSTED, type GuardInput } from '@/lib/guard';
-import { COINS, DEPLOY_TX, ETHERSCAN, FOOTNOTE, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
-import { burnPayout, maxMint, mintDeposits, parseAmount, toNum, type TargetParam } from '@/lib/flow';
+import { COINS, ETHERSCAN, FOOTNOTE, HELPERS_ADDR, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
+import { maxMint, parseAmount, toNum, type TargetParam } from '@/lib/flow';
+import { quoteRebalance, room, type RebState } from '@/lib/rebalance';
+import { dfiPrice, poolId, poolKey, V4, zeroForOne } from '@/lib/uniswap';
 import { f2, hhmm, type ReserveReading } from '@/lib/reserve';
 import { CHAIN_NAMES, PREVIEW_ADDR, WALLETS } from '@/lib/wagmi';
 import { Mark, MiniBar, TokenIcon, Wordmark } from './brand';
@@ -17,7 +19,15 @@ import s from '@/app/app/app.module.css';
 
 type Step = 'amount' | 'review' | 'done';
 type Toast = { color: string; text: string; word: string } | null;
-type Activity = { kind: 'MINT' | 'REDEEM'; amt: string; when: string; hash: string };
+type Activity = { kind: ActivityRow['kind']; amt: string; when: string; hash: string };
+type ActivityRow = { kind: 'MINT' | 'REDEEM' | 'BUY' | 'SELL' | 'IN' | 'OUT'; value: string; hash: string; ts: string | null };
+
+/** The value after it has stopped changing for `ms`, so quotes are fetched once per pause in typing, not per key. */
+function useDebounced<T>(v: T, ms = 300) {
+  const [d, setD] = useState(v);
+  useEffect(() => { const t = window.setTimeout(() => setD(v), ms); return () => clearTimeout(t); }, [v, ms]);
+  return d;
+}
 type Tab = 'swap' | 'contribute';
 type Method = 'rebalance' | 'basket';
 
@@ -144,7 +154,14 @@ export function AppFlow() {
       { ...RM, functionName: 'getBurnFeeQ96', chainId: 1 },
       { ...RM, functionName: 'getIsMintEnabled', chainId: 1 },
       { ...RM, functionName: 'getEqualizationBounty', chainId: 1 },
-    ],
+      // Rebalancing state, read in the same call so every number is from the same block.
+      { ...RM, functionName: 'getCurrentAssetParams', chainId: 1 },
+      { ...RM, functionName: 'getTotalReservesScaled', chainId: 1 },
+      { ...RM, functionName: 'getMaxReserves', chainId: 1 },
+      ...COINS.map(c => ({ ...RM, functionName: 'getSpecificReservesScaled', args: [c.address], chainId: 1 })),
+      // One multicall (well under viem's batch size), so all of these come from the same block. Typed loosely here and
+      // read back by position below.
+    ] as unknown as readonly ContractFunctionParameters[],
   });
   const wallet = useReadContracts({
     allowFailure: false,
@@ -184,14 +201,35 @@ export function AppFlow() {
     return {
       indexToken: v(0), emigrating: v(1), tokenReserveManager: v(2), migrating: v(3),
       frozen: address ? v<boolean>(4) ?? false : false,
-      targetAssets: params.data ? (params.data[0] as readonly TargetParam[]).map(p => p.assetAddress) : params.isError ? null : undefined,
+      targetAssets: params.data ? (params.data[0] as readonly TargetParam[]) : params.isError ? null : undefined,
+      currentAssets: params.data ? (params.data[6] as readonly TargetParam[]) : params.isError ? null : undefined,
       paused: p?.paused, pauseMessage: p?.message,
     };
   };
   const guard = evaluateGuard(guardInput(guardReads.data, pause));
   const safe = guard.state === 'ok';
-  const [targets, compFeeQ, mintFeeQ, burnFeeQ, mintEnabledRead, bountyRaw] = params.data ?? [[] as readonly TargetParam[], 0n, 0n, 0n, undefined, 0n];
+  const pd = params.data as readonly unknown[] | undefined;
+  const targets = (pd?.[0] ?? []) as readonly TargetParam[];
+  const compFeeQ = (pd?.[1] ?? 0n) as bigint;
+  const mintFeeQ = (pd?.[2] ?? 0n) as bigint;
+  const burnFeeQ = (pd?.[3] ?? 0n) as bigint;
+  const mintEnabledRead = pd?.[4] as boolean | undefined;
+  const bountyRaw = (pd?.[5] ?? 0n) as bigint;
   const mintEnabled = mintEnabledRead ?? reading.mintEnabled;
+  // Exact rebalancing state (lib/rebalance.ts). Dev-only ?drift=1 skews the holdings the same way as the display.
+  const rebState = useMemo<RebState | null>(() => {
+    if (!pd) return null;
+    const current = pd[6] as readonly TargetParam[];
+    const heldBy = new Map(COINS.map((c, i) => [c.address.toLowerCase(), pd[9 + i] as bigint]));
+    const mult = [80n, 100n, 100n, 135n, 100n, 100n, 100n];
+    let assets = current.map(a => ({ address: a.assetAddress, targetAllocation: a.targetAllocation, decimals: a.decimals, held: heldBy.get(a.assetAddress.toLowerCase()) ?? 0n }));
+    let total = pd[7] as bigint;
+    if (drift) {
+      assets = assets.map(a => ({ ...a, held: (a.held * mult[Math.max(0, COINS.findIndex(c => c.address.toLowerCase() === a.address.toLowerCase()))]) / 100n }));
+      total = assets.reduce((t, a) => t + a.held, 0n);
+    }
+    return { assets, total, bounty: drift ? 250n * E18 : bountyRaw, maxReserves: pd[8] as bigint };
+  }, [pd, drift, bountyRaw]);
   const w = (wallet.data ?? []) as readonly bigint[];
   const dfiBal = w[0] ?? 0n;
   const coinBals = COINS.map((_, i) => w[1 + i] ?? 0n);
@@ -207,90 +245,118 @@ export function AppFlow() {
   /* ---------- amount ---------- */
   const raw = parseAmount(amount);
   const amt = raw !== null ? toNum(raw, 18) : 0;
+  // Quotes are fetched for the amount once typing pauses; until the quote matches what is typed, nothing can be submitted.
+  const dRaw = useDebounced(raw);
+  const settled = dRaw === raw;
 
-  /* ---------- swap tab ---------- */
+  /* ---------- swap tab: live Uniswap V4 quote and pool price ---------- */
   const richest = COINS.reduce((best, _, i) => (usdBal(i) > usdBal(best) ? i : best), 0);
   const sIdx = swapIdx ?? richest;
   const sCoin = COINS[sIdx];
   const swapPayBal = side === 'buy' ? usdBal(sIdx) : dfiNum;
-  const swapErr = tab === 'swap' && raw && ready && amt > swapPayBal ? 'amount is above your balance.' : '';
   const swapPooled = POOLED.has(sCoin.t);
+  const sKey = useMemo(() => poolKey(sCoin.address), [sCoin.address]);
+  const swapIn = dRaw && dRaw > 0n ? (side === 'buy' ? dRaw / 10n ** BigInt(18 - sCoin.decimals) : dRaw) : 0n;
+  const swapQ = useReadContract({
+    address: V4.quoter, abi: v4QuoterAbi, functionName: 'quoteExactInputSingle', chainId: 1,
+    args: [{ poolKey: sKey, zeroForOne: zeroForOne(sKey, side === 'buy' ? sCoin.address : TOKEN_ADDR), exactAmount: swapIn, hookData: '0x' }],
+    query: { enabled: mounted && tab === 'swap' && swapPooled && swapIn > 0n, refetchInterval: 15_000, retry: false },
+  });
+  const slot = useReadContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(sKey)], chainId: 1, query: { enabled: mounted && swapPooled, refetchInterval: 30_000 } });
+  // DFiUSD's market price, from the deepest pool (USDC).
+  const usdcKey = useMemo(() => poolKey(COINS[0].address), []);
+  const pegSlot = useReadContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(usdcKey)], chainId: 1, query: { enabled: mounted, refetchInterval: 60_000 } });
+  const peg = pegSlot.data && pegSlot.data[0] > 0n ? dfiPrice(usdcKey, pegSlot.data[0], COINS[0].decimals) : null;
+  const mid = slot.data && slot.data[0] > 0n ? dfiPrice(sKey, slot.data[0], sCoin.decimals) : null; // coin per DFiUSD
+  const swapOut = swapIn > 0n && swapQ.data && settled ? toNum(swapQ.data[0], side === 'buy' ? 18 : sCoin.decimals) : null;
+  const atMid = mid ? (side === 'buy' ? amt / mid : amt * mid) : null;
+  const impact = swapOut !== null && atMid ? Math.max(0, 1 - swapOut / atMid) : null;
+  let swapErr = '';
+  if (tab === 'swap' && swapIn > 0n && settled && swapQ.isError) swapErr = 'the pool can’t fill this amount. try a smaller one.';
+  else if (tab === 'swap' && raw && ready && amt > swapPayBal) swapErr = 'amount is above your balance.';
+  const rateText = swapOut !== null && amt > 0
+    ? side === 'buy' ? `1 ${sCoin.t} = ${(swapOut / amt).toFixed(4)} DFiUSD` : `1 DFiUSD = ${(swapOut / amt).toFixed(4)} ${sCoin.t}`
+    : mid ? (side === 'buy' ? `1 ${sCoin.t} ≈ ${(1 / mid).toFixed(4)} DFiUSD` : `1 DFiUSD ≈ ${mid.toFixed(4)} ${sCoin.t}`) : '—';
 
-  /* ---------- mint & redeem: rebalance with one coin ---------- */
-  const gap = useMemo(() => gaps(reading), [reading]);
+  /* ---------- mint & redeem: rebalance with one coin (exact contract maths, lib/rebalance.ts) ---------- */
+  const roomNum = COINS.map(c => (rebState ? toNum(room(rebState, c.address, dir), c.decimals) : 0));
   // Coins the reserve accepts right now: short of target for a mint, over target for a redeem. Ignore dust under a cent.
-  const open = COINS.map((_, i) => (dir === 'mint' ? gap[i].diff : -gap[i].diff) > 0.01);
+  const open = roomNum.map(r => r > 0.01);
   const anyOpen = open.some(Boolean);
   const firstOpen = open.findIndex(Boolean);
   const rIdx = rebIdx !== null && open[rebIdx] ? rebIdx : firstOpen >= 0 ? firstOpen : 0;
   const rCoin = COINS[rIdx];
-  const rRoom = open[rIdx] ? down2(gap[rIdx].room) : 0;
-  const totalImbalance = gap.reduce((a, g) => a + Math.abs(g.diff), 0);
-  // Reward = pool × share of the imbalance this fixes (ReserveMath.calcEqualizationBounty), estimated in dollars.
-  const reward = rebalancing() && amt > 0 && totalImbalance > 0 ? Math.min(bounty, bounty * Math.min(1, amt / totalImbalance)) : 0;
+  const rRoom = open[rIdx] ? down2(roomNum[rIdx]) : 0;
   function rebalancing() { return tab === 'contribute' && method === 'rebalance'; }
   const rebUnits = raw !== null ? raw / 10n ** BigInt(18 - rCoin.decimals) : 0n;
+  const rq = rebState && rebUnits > 0n ? quoteRebalance(rebState, rCoin.address, dir, rebUnits) : null;
+  const reward = rq?.ok ? toNum(rq.reward, 18) : 0;
+  const rebDfi = rq?.ok ? toNum(rq.dfi, 18) : 0; // mint: DFiUSD you get; redeem: DFiUSD you burn
   let rebErr = '';
   if (rebalancing() && raw && ready) {
-    if (amt > rRoom) rebErr = `the reserve takes up to ${f2(rRoom)} ${rCoin.t} right now.`;
-    else if (dir === 'mint' && amt > usdBal(rIdx)) rebErr = 'amount is above your balance.';
-    else if (dir === 'redeem' && amt - reward > dfiNum) rebErr = 'amount is above your DFiUSD balance.';
+    if (rq && !rq.ok) rebErr = rq.reason === 'size-limit' ? 'the reserve is at its size limit right now.' : rq.reason === 'revert' ? 'the contract would reject this amount. try a smaller one.' : `the reserve takes up to ${f2(rRoom)} ${rCoin.t} right now.`;
+    else if (dir === 'mint' && rebUnits > coinBals[rIdx]) rebErr = 'amount is above your balance.';
+    else if (dir === 'redeem' && rq?.ok && rq.dfi > dfiBal) rebErr = 'amount is above your DFiUSD balance.';
   }
-  const rebValid = rebalancing() && anyOpen && !!raw && raw > 0n && !rebErr && ready && (dir === 'redeem' || mintEnabled);
+  const rebValid = rebalancing() && anyOpen && !!rq?.ok && !rebErr && ready && (dir === 'redeem' || mintEnabled);
 
-  /* ---------- mint & redeem: the full basket (mint() / burn()) ---------- */
+  /* ---------- mint & redeem: the full basket (mint() / burn()), quoted exactly by ReserveManagerHelpers ---------- */
   const basket = tab === 'contribute' && method === 'basket';
   const isMint = basket && dir === 'mint';
-  const deposits = useMemo(() => (raw && targets.length ? mintDeposits(raw, targets, compFeeQ) : []), [raw, targets, compFeeQ]);
+  const quoteArgs = [dRaw && dRaw > 0n ? dRaw : 0n] as const;
+  const mintQ = useReadContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteMint', args: quoteArgs, chainId: 1, query: { enabled: mounted && isMint && quoteArgs[0] > 0n, refetchInterval: 30_000, retry: false } });
+  const burnQ = useReadContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteBurn', args: quoteArgs, chainId: 1, query: { enabled: mounted && basket && !isMint && quoteArgs[0] > 0n, refetchInterval: 30_000, retry: false } });
+  const basketQ = isMint ? mintQ : burnQ;
+  // wagmi keys each quote by its amount, so data here always belongs to the debounced amount; `settled` ties it to the typed one.
+  const quoteFresh = settled && !!basketQ.data;
+  const byAddr = (list?: readonly { assetAddress: Address; amount: bigint }[]) =>
+    COINS.map(c => ({ coin: c, decimals: c.decimals, amount: list?.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n }));
+  const deposits = isMint && quoteFresh && mintQ.data ? byAddr(mintQ.data[0]) : [];
+  const payouts = !isMint && basket && quoteFresh && burnQ.data ? byAddr(burnQ.data[0]) : [];
   const shortfalls = deposits.filter((dp, i) => dp.amount > coinBals[i]);
+  const mintPaused = dir === 'mint' && !mintEnabled;
   let error = '';
   if (raw !== null && raw === 0n) error = 'enter an amount above zero.';
   else if (basket && raw && ready && (isMint ? shortfalls.length > 0 : raw > dfiBal)) error = 'amount is above your balance.';
-  const mintPaused = dir === 'mint' && !mintEnabled;
-  const valid = basket && !!raw && raw > 0n && !error && ready && !(isMint && mintPaused);
+  else if (basket && raw && settled && basketQ.isError && !mintPaused)
+    error = String(basketQ.error?.message ?? '').includes('max reserves') ? 'the reserve is at its size limit right now.' : 'couldn’t get an exact quote. try again in a moment.';
+  const valid = basket && !!raw && raw > 0n && !error && ready && quoteFresh && !(isMint && mintPaused);
   const depositTotal = deposits.reduce((a, dp) => a + toNum(dp.amount, dp.decimals), 0);
-  const mintFeeAmt = isMint ? depositTotal - amt : 0;
-  const redeem = burnPayout(amt, burnFee, reading.coins.map(c => c.current));
+  const mintFeeAmt = isMint && mintQ.data ? toNum(mintQ.data[1], 18) : 0;
+  const redeem = { net: payouts.reduce((a, p) => a + toNum(p.amount, p.decimals), 0), parts: payouts.map(p => toNum(p.amount, p.decimals)), fee: burnQ.data ? toNum(burnQ.data[1], 18) : 0 };
   const maxRaw = isMint ? maxMint(coinBals, targets, compFeeQ) : dfiBal;
   const approvalsNeeded = isMint ? deposits.filter((dp, i) => dp.amount > allowances[i]).length : 0;
   const feePct = (isMint ? mintFee : burnFee) * 100;
-  const feeText = `${feePct.toFixed(2)}%` + (valid ? ' · ' + f2(isMint ? mintFeeAmt : amt * burnFee) + (isMint ? ' USD' : ' DFiUSD') : '');
+  const feeText = `${feePct.toFixed(2)}%` + (valid ? ' · ' + f2(isMint ? mintFeeAmt : redeem.fee) + ' DFiUSD' : '');
 
   /* ---------- review summary, per route ---------- */
   const rebNeedsApproval = dir === 'mint' && rebUnits > allowances[rIdx];
   const summary = rebalancing()
     ? dir === 'mint'
-      ? { title: 'review your rebalance.', kind: 'MINT' as const, in: `${f2(amt)} ${rCoin.t}`, out: `≈ ${f2(amt + reward)} DFiUSD`, extra: reward > 0 ? `≈ ${f2(reward)} DFiUSD reward` : 'none right now', requests: rebNeedsApproval ? `approve ${rCoin.t} + deposit` : 'deposit' }
-      : { title: 'review your rebalance.', kind: 'REDEEM' as const, in: `≈ ${f2(Math.max(0, amt - reward))} DFiUSD`, out: `${f2(amt)} ${rCoin.t}`, extra: reward > 0 ? `≈ ${f2(reward)} DFiUSD less to burn` : 'none right now', requests: 'withdraw' }
+      ? { title: 'review your rebalance.', kind: 'MINT' as const, in: `${f2(amt)} ${rCoin.t}`, out: `${f2(rebDfi)} DFiUSD`, extra: reward > 0 ? `${f2(reward)} DFiUSD reward` : 'none right now', requests: rebNeedsApproval ? `approve ${rCoin.t} + deposit` : 'deposit' }
+      : { title: 'review your rebalance.', kind: 'REDEEM' as const, in: `${f2(rebDfi)} DFiUSD`, out: `${f2(amt)} ${rCoin.t}`, extra: reward > 0 ? `${f2(reward)} DFiUSD less to burn` : 'none right now', requests: 'withdraw' }
     : isMint
       ? { title: 'review your mint.', kind: 'MINT' as const, in: `${valid ? f2(depositTotal) : '0.00'} across the basket`, out: `${f2(valid ? amt : 0)} DFiUSD`, extra: '', requests: approvalsNeeded ? `${approvalsNeeded} approval${approvalsNeeded > 1 ? 's' : ''} + mint` : 'mint' }
       : { title: 'review your redemption.', kind: 'REDEEM' as const, in: `${valid ? f2(amt) : '0.00'} DFiUSD`, out: `${f2(valid ? redeem.net : 0)} across the basket`, extra: '', requests: 'redeem' };
 
-  /* ---------- activity: DFiUSD mint/burn transfers for this wallet ---------- */
+  /* ---------- activity: this wallet's DFiUSD movements, from our /api/activity route (Alchemy, server side) ---------- */
   const loadHistory = useCallback(async () => {
-    if (!client || !address) return;
+    if (!address) return;
     try {
-      const rcpt = await client.getTransactionReceipt({ hash: DEPLOY_TX as Hash });
-      const ev = parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)');
-      const [ins, outs] = await Promise.all([
-        client.getLogs({ address: TOKEN_ADDR, event: ev, args: { from: zeroAddress, to: address }, fromBlock: rcpt.blockNumber }),
-        client.getLogs({ address: TOKEN_ADDR, event: ev, args: { from: address, to: zeroAddress }, fromBlock: rcpt.blockNumber }),
-      ]);
-      const all = [...ins.map(l => ({ l, kind: 'MINT' as const })), ...outs.map(l => ({ l, kind: 'REDEEM' as const }))]
-        .sort((a, b) => Number(b.l.blockNumber - a.l.blockNumber)).slice(0, 6);
-      const rows = await Promise.all(all.map(async ({ l, kind }) => {
-        const b = await client.getBlock({ blockNumber: l.blockNumber });
-        const v = f2(toNum(l.args.value ?? 0n, 18));
+      const r = await fetch(`/api/activity?address=${address}`);
+      if (!r.ok) throw new Error(String(r.status));
+      const { rows } = (await r.json()) as { rows: ActivityRow[] };
+      setHistory(rows.slice(0, 8).map(row => {
+        const v = `${f2(Number(row.value))} DFiUSD`;
         return {
-          kind, hash: l.transactionHash,
-          amt: kind === 'MINT' ? `→ ${v} DFiUSD` : `${v} DFiUSD →`,
-          when: new Date(Number(b.timestamp) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+          kind: row.kind, hash: row.hash,
+          amt: row.kind === 'MINT' || row.kind === 'BUY' || row.kind === 'IN' ? `+ ${v}` : `− ${v}`,
+          when: row.ts ? new Date(row.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '',
         };
       }));
-      setHistory(rows);
       setHistoryErr(false);
-    } catch { setHistoryErr(true); /* public RPCs may cap log ranges */ }
-  }, [client, address]);
+    } catch { setHistoryErr(true); }
+  }, [address]);
   useEffect(() => { if (connected && !wrongNet) loadHistory(); else setHistory([]); }, [connected, wrongNet, loadHistory]);
 
   /* ---------- write flow ---------- */
@@ -340,7 +406,7 @@ export function AppFlow() {
       if (r.status !== 'success') throw new Error('reverted');
       const title = dir === 'mint' ? (rebalancing() ? 'rebalance confirmed.' : 'mint confirmed.') : (rebalancing() ? 'rebalance confirmed.' : 'redemption confirmed.');
       setDone({ at: Date.now(), hash, sumIn: summary.in, sumOut: summary.out, title });
-      setHistory(h => [{ kind: summary.kind, hash, amt: dir === 'mint' ? `→ ${summary.out}` : `${summary.in} →`, when: 'just now' }, ...h]);
+      setHistory(h => [{ kind: summary.kind, hash, amt: dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
       setStep('done');
       showToast({ color: 'var(--ok)', text: title, word: 'CONFIRMED' }, 5000);
       reads.refetch();
@@ -423,14 +489,14 @@ export function AppFlow() {
       {COINS.map((c, i) => {
         const dp = deposits[i];
         const low = isMint && dp && dp.amount > coinBals[i] && ready;
-        const val = isMint ? (dp && valid ? f2(toNum(dp.amount, dp.decimals)) : '0.00') : f2(valid ? redeem.parts[i] : 0);
+        const val = isMint ? (dp && dp.amount > 0n ? f2(toNum(dp.amount, dp.decimals)) : '0.00') : f2(redeem.parts[i] ?? 0);
         return (
           <div key={c.t} className={s.mixRow}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <i className="sw" style={{ background: c.color }} />{c.t}
               <span style={{ fontSize: 12 }} className="dim">{isMint ? `balance ${ready ? f2(down2(usdBal(i))) : '—'}` : reading.coins[i].current.toFixed(1) + '%'}</span>
             </span>
-            <span style={{ fontWeight: 600, color: low ? 'var(--crit)' : valid ? 'var(--fg)' : 'var(--dim)' }}>{val}</span>
+            <span style={{ fontWeight: 600, color: low ? 'var(--crit)' : quoteFresh ? 'var(--fg)' : 'var(--dim)' }}>{val}</span>
           </div>
         );
       })}
@@ -509,7 +575,7 @@ export function AppFlow() {
               {/* ---------- SWAP: one coin in or out at market, like a DEX ---------- */}
               {tab === 'swap' && (
                 <>
-                  <p className={s.lead}>Trade one coin for DFiUSD, or back, in one step. Swaps carry a higher fee: the system does the balancing for you.</p>
+                  <p className={s.lead}>Trade one coin for DFiUSD, or back, in one step, through the DFiUSD pools on Uniswap.</p>
                   {/* pay and receive as two boxes that almost touch, with the flip button on the seam, like a DEX */}
                   <div className={s.pair}>
                     <div className={s.box} style={inputStyle(!!swapErr)}>
@@ -530,7 +596,7 @@ export function AppFlow() {
                     <div className={`${s.box} ${s.boxOut}`}>
                       <span className={s.flabel}>you receive</span>
                       <div className={s.boxRow}>
-                        <span className={s.quoteAmt} style={{ color: amt > 0 ? 'var(--fg)' : 'var(--strong)' }}>{amt > 0 ? `≈ ${f2(amt)}` : '0.00'}</span>
+                        <span className={s.quoteAmt} style={{ color: swapOut !== null ? 'var(--fg)' : 'var(--strong)' }}>{swapOut !== null ? f2(swapOut) : amt > 0 && !swapErr ? '…' : '0.00'}</span>
                         {side === 'sell'
                           ? <CoinPick id="swapcoin" label="receive" value={String(sIdx)} onChange={v => setSwapIdx(Number(v))} options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color }))} />
                           : <DfiTag />}
@@ -539,8 +605,9 @@ export function AppFlow() {
                   </div>
 
                   <dl className={s.dl} style={{ fontSize: 14 }}>
-                    <div><dt>rate</dt><dd className="mono">{side === 'buy' ? `1 ${sCoin.t} ≈ 1 DFiUSD` : `1 DFiUSD ≈ 1 ${sCoin.t}`}</dd></div>
-                    <div><dt>swap fee</dt><dd>shown before you swap</dd></div>
+                    <div><dt>rate</dt><dd className="mono">{rateText}</dd></div>
+                    <div><dt>price impact</dt><dd className="mono" style={{ color: impact !== null && impact > 0.01 ? 'var(--warn)' : undefined }}>{impact !== null ? (impact < 0.0001 ? '< 0.01%' : (impact * 100).toFixed(2) + '%') : '—'}</dd></div>
+                    <div><dt>fee</dt><dd className="mono">0.01% Uniswap pool fee · no DiversiFi fee</dd></div>
                   </dl>
 
                   <button type="button" className={`btn btn-primary ${s.b52}`} disabled>{SWAP_LIVE ? 'swap' : 'swap · coming soon'}</button>
@@ -588,7 +655,7 @@ export function AppFlow() {
                             {amountInput(!!rebErr, dir === 'mint' ? 'you add' : 'you give')}
                             {dir === 'mint'
                               ? <CoinPick id="rebcoin" label="coin to add" value={String(rIdx)} onChange={v => { setRebIdx(Number(v)); clear(); }}
-                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(gap[i].room))}` : 'on target' }))} />
+                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(roomNum[i]))}` : 'on target' }))} />
                               : <DfiTag />}
                           </div>
                           {dir === 'mint'
@@ -603,11 +670,11 @@ export function AppFlow() {
                         <div className={`${s.box} ${s.boxOut}`}>
                           <span className={s.flabel}>{dir === 'mint' ? 'you get' : 'you receive'}</span>
                           <div className={s.boxRow}>
-                            <span className={s.quoteAmt} style={{ color: amt > 0 ? 'var(--fg)' : 'var(--strong)' }}>{amt > 0 ? `≈ ${f2(dir === 'mint' ? amt + reward : amt)}` : '0.00'}</span>
+                            <span className={s.quoteAmt} style={{ color: amt > 0 && rq?.ok ? 'var(--fg)' : 'var(--strong)' }}>{amt > 0 && rq?.ok ? f2(dir === 'mint' ? rebDfi : amt) : '0.00'}</span>
                             {dir === 'mint'
                               ? <DfiTag />
                               : <CoinPick id="rebcoin" label="coin to take out" value={String(rIdx)} onChange={v => { setRebIdx(Number(v)); clear(); }}
-                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(gap[i].room))}` : 'on target' }))} />}
+                                  options={COINS.map((c, i) => ({ value: String(i), label: c.t, color: c.color, disabled: !open[i], note: open[i] ? `up to ${f2(down2(roomNum[i]))}` : 'on target' }))} />}
                           </div>
                         </div>
                       </div>
@@ -679,14 +746,14 @@ export function AppFlow() {
                   {COINS.map((c, i) => (
                     <div key={c.t} className={s.mixRow}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><i className="sw" style={{ background: c.color }} />{c.t}</span>
-                      <span style={{ fontWeight: 600 }}>{f2(redeem.parts[i])}</span>
+                      <span style={{ fontWeight: 600 }}>{f2(redeem.parts[i] ?? 0)}</span>
                     </div>
                   ))}
                 </div>
               )}
               {rejected && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>you rejected the request in your wallet. nothing was sent.</p>}
               {failed && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>{failed}</p>}
-              <p className="foot">{rebalancing() ? 'The reward is an estimate: the contract pays it from the pool when your transaction lands.' : 'Fees are read from the contract and already included above.'} Your wallet will ask you to confirm.</p>
+              <p className="foot">{rebalancing() ? 'Worked out with the contract’s own maths from the reserve as it is now. If someone rebalances first, the reward can be smaller.' : 'Fees are read from the contract and already included above.'} Your wallet will ask you to confirm.</p>
               <div className={s.btnRow}>
                 <button type="button" className={`btn btn-secondary ${s.b52}`} style={{ flex: 1 }} disabled={pending} onClick={() => { setStep('amount'); setRejected(false); setFailed(''); }}>back</button>
                 <button type="button" className={`btn btn-primary ${s.b52}`} style={{ flex: 2 }} disabled={pending} onClick={confirm}>
@@ -721,6 +788,9 @@ export function AppFlow() {
               <div className="rail"><span>BACKING</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg)' }}><span className="livedot" />LIVE · {hhmm(reading.readAt)} UTC</span></div>
               <p style={{ fontSize: 'clamp(20px, 2vw, 24px)', lineHeight: 1.15, letterSpacing: '-0.02em' }}>every DFiUSD is backed by the whole basket.</p>
               <ReserveBar size="md" readout showTotal={false} status />
+              <dl className={s.dl} style={{ fontSize: 14 }}>
+                <div><dt>market price</dt><dd className="mono">{peg ? `1 DFiUSD = ${peg.toFixed(4)} USDC` : '—'}</dd></div>
+              </dl>
               <Link href="/#reserve" style={{ fontSize: 15 }}>check the reserve →</Link>
             </>
           )}
@@ -729,7 +799,7 @@ export function AppFlow() {
               <div className="rail"><span>ACTIVITY · THIS WALLET</span><span>{history.length} TX</span></div>
               {history.length === 0 && (
                 <p className="foot" style={{ padding: '14px 0' }}>
-                  {historyErr ? 'couldn’t load this wallet’s activity right now.' : 'no mints or redemptions yet.'}{' '}
+                  {historyErr ? 'couldn’t load this wallet’s activity right now.' : 'no DFiUSD activity yet.'}{' '}
                   <a href={`${ETHERSCAN}/address/${address}`} target="_blank" rel="noopener">see this wallet on etherscan ↗</a>
                 </p>
               )}
