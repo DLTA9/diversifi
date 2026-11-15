@@ -6,6 +6,31 @@ Sources: the live app bundle at app.diversifi.tech, docs.diversifi.tech (contrac
 
 ---
 
+## Start here (next session)
+
+**Where things stand (15 Nov 2026):**
+- **Website:** home, /app (swap + mint & redeem), /faq and /terms are live on the preview (diversifi.wispy-sky-e4f3.workers.dev). diversifi.tech still shows the old site.
+- **App:** the designs are finished. Mint & redeem (full basket and one-coin rebalancing) are wired to the contract but untested with real funds. Swap is laid out, with its button disabled and a Uniswap link instead.
+- **Speed and SEO:** page cache (R2), robots, sitemap, llms.txt and FAQ are all done.
+
+**What to have open before we begin:**
+1. VS Code with the `web` folder open, plus GitHub Desktop
+2. The Cloudflare dashboard, logged in
+3. A browser to make two free accounts: alchemy.com and cloud.reown.com
+
+**First hour, step by step:**
+1. Do `CLIENT-CHECKLIST.md` part 1, items 1–7: Alchemy key, Reown ID, DNSSEC, CAA, auto-renew, alerts, GitHub protection. I'll walk through every click.
+2. Send the client the four questions in part 2. We don't wait for answers.
+3. Start section 5, step 1 (the safety foundation).
+
+**How we work:**
+- Explain everything in plain words.
+- Ask one simple question at a time.
+- I commit; the user pushes from GitHub Desktop.
+- Never press "Pull origin" without checking first.
+
+---
+
 ## 1. What exists on-chain (verified)
 
 | Contract | Address (Ethereum mainnet) | Notes |
@@ -29,7 +54,21 @@ Contract behaviour that matters for the UI:
 - Bounty share = pool × (discrepancy resolved ÷ discrepancy before), where discrepancy = sum of |equalization vector| (`getTotalReservesDiscrepencyScaled`). Get exact numbers by simulating the call, not by estimating (our current UI estimate is approximate).
 - Neither swapTowardsTarget direction can make the user worse than 1:1 on the asset side; the bounty only adds. A sandwich can only reduce the bonus, not the principal. Still simulate and show the exact result.
 
-Uniswap V4 pools (DexScreener, 15 Nov): DFiUSD/USDC ~$280k, /DAI ~$45k, /USDS ~$45k, /USDT ~$30k, /GHO ~$30k, /FDUSD ~$30k. **No hook** (old app builds pool keys with `hooks = 0x0`, `fee = 100`). No frxUSD pool.
+Uniswap V4 pools: DFiUSD paired with all seven coins, **no hook** (pool key: `fee = 100`, `tickSpacing = 1`, `hooks = 0x0`). Liquidity (DexScreener, 15 Nov): USDC ~$280k, DAI ~$45k, USDS ~$45k, USDT ~$30k, GHO ~$30k, FDUSD ~$30k; frxUSD is not listed there but quotes fine.
+
+Live V4Quoter quotes, 15 Nov 2026, coin → DFiUSD:
+
+| Coin | For 100 | For 10,000 |
+|---|---|---|
+| USDC | 99.99 | 9,996.90 |
+| DAI | 99.99 | 9,987.75 |
+| USDS | 99.98 | 9,987.19 |
+| frxUSD | 99.98 | 9,981.37 |
+| USDT | 99.95 | 9,978.35 |
+| GHO | 99.89 | 9,973.07 |
+| FDUSD | 99.50 | reverts (not enough liquidity) |
+
+The swap tab must show the price impact and refuse amounts the pool can't fill.
 
 ---
 
@@ -115,6 +154,8 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
 
 ## 5. Build order for the next session(s)
 
+**Goal: every feature live at launch, no "soon" labels.** That means swap, rebalancing, and full-basket mint and redeem, all inside the app.
+
 0. **Prerequisites.** Full list in `CLIENT-CHECKLIST.md`.
    - **We set up ourselves (at the start of the session, guided):**
      - Alchemy key, stored as the `RPC_URL` secret in Cloudflare
@@ -129,7 +170,12 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - budget for an outside review
 1. **Foundation:** contract registry + runtime checks, pinned ABIs from verified sources, chain guard, kill switch, security headers/CSP, dependency upgrade.
 2. **Reads:** dynamic asset list, helper quotes, bounty/discrepancy, peg price, activity via indexer.
-3. **Writes:** basket mint and redeem → rebalance (swapTowardsTarget) → swap (Universal Router + Permit2). Each with simulate → review → sign → receipt.
+3. **Writes**, in this order, each with simulate → review → sign → receipt:
+   1. **swap** (Universal Router + Permit2, both directions, all seven coins): most users will use this, and it already works on the old site
+   2. full-basket mint and redeem
+   3. rebalance (swapTowardsTarget)
+
+   When a flow passes its tests, remove its "coming soon" state (`SWAP_LIVE`, the SOON tag, the Uniswap fallback link).
 4. **Testing:**
    - unit tests for all maths, checked against helper quotes
    - Anvil mainnet-fork tests for every flow, using impersonated holder accounts
@@ -147,5 +193,5 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
 - `lib/abi.ts`: `approve` declared `returns (bool)`, which breaks simulation for USDT.
 - `lib/wagmi.ts`: `multiInjectedProviderDiscovery: false` and a MetaMask-only injected target. Enable EIP-6963 so Rabby and other browser wallets appear by name.
 - No security headers yet. Add in `middleware.ts`.
-- `SWAP_LIVE` false; swap tab offline until step 3.
+- `SWAP_LIVE` false, the SOON tab tag and the "for now, swap on Uniswap" link: all go when swap ships in step 3.
 - Dev-only `?preview=` / `?drift=` helpers stay dev-only. Keep them out of production builds (they are gated by `NODE_ENV`).

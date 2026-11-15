@@ -89,7 +89,6 @@
 .balErr { color: var(--crit); }
 
 /* ---------- swap | mint & redeem ---------- */
-.soonTag { margin-left: 8px; padding: 2px 5px; border: 1px solid currentColor; border-radius: 3px; font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .06em; vertical-align: 2px; opacity: .7; }
 .lead { font-size: 14px; line-height: 1.5; color: var(--dim); max-width: 34em; }
 /* flip between paying a coin and paying DFiUSD */
 .pair { display: flex; flex-direction: column; gap: 4px; }

@@ -28,8 +28,8 @@ const RM = { address: RM_ADDR, abi: reserveManagerAbi } as const;
 
 // Swap (one coin in or out at market) isn't wired in-app yet; flip this when it ships.
 const SWAP_LIVE = false;
-// Coins with a DFiUSD pool on Uniswap V4 (frxUSD has none yet).
-const POOLED = new Set(['USDC', 'DAI', 'USDS', 'USDT', 'GHO', 'FDUSD']);
+// Coins with a DFiUSD pool on Uniswap V4 (all seven, checked with the V4 quoter on 15 Nov 2026).
+const POOLED = new Set(['USDC', 'DAI', 'USDS', 'USDT', 'GHO', 'FDUSD', 'frxUSD']);
 // Uniswap's swap page with both tokens and the amount filled in. Used while swaps run outside the app.
 const uniswapUrl = (from: string, to: string, value: string) =>
   `https://app.uniswap.org/swap?chain=mainnet&inputCurrency=${from}&outputCurrency=${to}${value ? `&value=${value}&field=input` : ''}`;
@@ -383,7 +383,6 @@ export function AppFlow() {
             <Link href="/" aria-label="DiversiFi home" className={s.logo}><Wordmark /></Link>
             <div className={s.navLinks}>
               <span aria-current="page" className={s.current}>app</span>
-              <Link href="/#reserve" className={s.navLink}>reserve</Link>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -436,7 +435,7 @@ export function AppFlow() {
             <div className={s.col}>
               <div role="tablist" aria-label="mode" className={s.tabs}>
                 <button type="button" role="tab" aria-selected={tab === 'swap'} className={tab === 'swap' ? s.tabOn : undefined} onClick={() => goTab('swap')}>
-                  swap{!SWAP_LIVE && <span className={s.soonTag}>SOON</span>}
+                  swap
                 </button>
                 <button type="button" role="tab" aria-selected={tab === 'contribute'} className={tab === 'contribute' ? s.tabOn : undefined} onClick={() => goTab('contribute')}>mint &amp; redeem</button>
               </div>
@@ -507,7 +506,7 @@ export function AppFlow() {
                   {/* one coin, rebalancing. Balanced: the form stays visible but greyed out, with a short note above it */}
                   {method === 'rebalance' && !anyOpen && (
                     <p className={s.note}>
-                      <strong>the basket is balanced right now.</strong> Every coin is on target, so there is nothing to {dir === 'mint' ? 'add' : 'take out'} yet.{' '}
+                      <strong>the basket is balanced right now.</strong>{' '}
                       <button type="button" className={s.inlineLink} onClick={() => { setMethod('basket'); clear(); }}>use the full basket →</button>
                     </p>
                   )}
