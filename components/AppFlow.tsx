@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseAbiItem, zeroAddress, type Address, type Hash } from 'viem';
-import { useAccount, useConnect, useDisconnect, usePublicClient, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
+import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
 import { erc20Abi, reserveManagerAbi } from '@/lib/abi';
 import { COINS, DEPLOY_TX, ETHERSCAN, FOOTNOTE, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
 import { burnPayout, maxMint, mintDeposits, parseAmount, toNum, type TargetParam } from '@/lib/flow';
@@ -88,11 +88,13 @@ export function AppFlow() {
   const [drift, setDrift] = useState(false);
   useEffect(() => setDrift(wantsDrift()), []);
   const reading = useMemo(() => (drift ? drifted(live) : live), [live, drift]);
-  const { address, isConnected, chainId } = useAccount();
-  const { connectors, connect, isPending: connecting } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { switchChain } = useSwitchChain();
-  const { writeContractAsync } = useWriteContract();
+  // wagmi 3 names: useConnection (was useAccount), useConnectors, and mutate/mutateAsync on action hooks.
+  const { address, isConnected, chainId } = useConnection();
+  const connectors = useConnectors();
+  const { mutate: connect, isPending: connecting } = useConnect();
+  const { mutate: disconnect } = useDisconnect();
+  const { mutate: switchChain } = useSwitchChain();
+  const { mutateAsync: writeContractAsync } = useWriteContract();
   const client = usePublicClient({ chainId: 1 });
 
   const [mounted, setMounted] = useState(false);
