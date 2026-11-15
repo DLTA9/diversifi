@@ -179,7 +179,13 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - the coin list and each coin's decimals are checked against the chain, and an unknown coin switches transactions off. The list stays in code on purpose, since a new coin needs a colour, issuer and review, and the 7-day timelock gives a week's notice.
    - local testing of the worker reads secrets from `web/.dev.vars`, which git ignores
 3. **Writes**, in this order, each with simulate → review → sign → receipt:
-   1. **swap** (Universal Router + Permit2, both directions, all seven coins): most users will use this, and it already works on the old site
+   1. **swap: done (15 Nov 2026).** Universal Router + Permit2, both directions, all seven coins, in `lib/swap.ts`.
+      - exact ERC-20 approval to Permit2, then an exact 30-minute permit signature; smart-account wallets (code at the address, e.g. EIP-7702) approve on-chain through `Permit2.approve` instead
+      - 0.30% minimum-received, 20-minute deadline, fresh quote at confirm, simulate before sending
+      - refuses price impact above 3% and pools paying below 0.97 per dollar
+      - "you received" is read from the receipt
+      - fork test `tests/swap.fork.test.ts`: 36/36. Clicked through in the app on the fork (`?fork=1`) with USDC → DFiUSD and DFiUSD → USDT.
+      - the coming-soon state and the Uniswap fallback link are removed
    2. full-basket mint and redeem
    3. rebalance (swapTowardsTarget)
 
@@ -197,8 +203,6 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
 
 ## 6. Things in the current repo to fix during integration
 - `lib/coins.ts`: hardcoded asset list and order. Replace with the on-chain list + registry.
-- `lib/abi.ts`: `approve` declared `returns (bool)`, which breaks simulation for USDT.
 - `lib/wagmi.ts`: `multiInjectedProviderDiscovery: false` and a MetaMask-only injected target. Enable EIP-6963 so Rabby and other browser wallets appear by name.
 - No security headers yet. Add in `middleware.ts`.
-- `SWAP_LIVE` false, the SOON tab tag and the "for now, swap on Uniswap" link: all go when swap ships in step 3.
 - Dev-only `?preview=` / `?drift=` helpers stay dev-only. Keep them out of production builds (they are gated by `NODE_ENV`).

@@ -44,7 +44,20 @@ export const erc20Abi = parseAbi([
   'function balanceOf(address account) view returns (uint256)',
   'function allowance(address owner, address spender) view returns (uint256)',
   'function totalSupply() view returns (uint256)',
-  'function approve(address spender, uint256 value) returns (bool)',
+  // Declared without a return value on purpose: USDT's approve returns nothing, and declaring a bool would make
+  // simulations of USDT approvals fail. The app never reads this return value.
+  'function approve(address spender, uint256 value)',
+  'function decimals() view returns (uint8)',
+  'event Transfer(address indexed from, address indexed to, uint256 value)',
+]);
+
+export const routerAbi = parseAbi([
+  'function execute(bytes commands, bytes[] inputs, uint256 deadline) payable',
+]);
+export const permit2Abi = parseAbi([
+  'function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)',
+  // On-chain alternative to the signed permit, for smart-account wallets (EIP-7702 / contract wallets).
+  'function approve(address token, address spender, uint160 amount, uint48 expiration)',
 ]);
 
 // DFiUSD (IndexToken) reads used by the safety checks.

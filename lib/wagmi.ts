@@ -1,4 +1,4 @@
-import { createConfig, injected } from 'wagmi';
+import { createConfig, http, injected } from 'wagmi';
 import { coinbaseWallet, mock, walletConnect } from 'wagmi/connectors';
 import { mainnet } from 'wagmi/chains';
 import { rpcTransport } from './reserve';
@@ -7,6 +7,12 @@ const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
 // Dev only: /app?preview=0x… connects a read-only mock wallet for that address, to see the connected
 // screens with real balances. It cannot sign. Stripped from production builds by the NODE_ENV check.
+// Dev only: add &fork=1 to send every chain call to a local Anvil copy of mainnet (localhost:8545) instead, so the
+// preview wallet can really sign and swap with test money. Never active in production builds.
+export const FORK =
+  process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('fork');
+const chain = FORK ? { ...mainnet, rpcUrls: { default: { http: ['http://localhost:8545'] } } } : mainnet;
+
 export const PREVIEW_ADDR =
   process.env.NODE_ENV === 'development' && typeof window !== 'undefined'
     ? (new URLSearchParams(window.location.search).get('preview') as `0x${string}` | null)
@@ -21,7 +27,7 @@ export const WALLETS = [
 ] as const;
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet],
+  chains: [chain],
   ssr: true,
   multiInjectedProviderDiscovery: false,
   connectors: [
@@ -30,7 +36,7 @@ export const wagmiConfig = createConfig({
     ...(PREVIEW_ADDR ? [mock({ accounts: [PREVIEW_ADDR] })] : []),
     ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true, metadata: { name: 'DiversiFi', description: 'Mint and redeem DFiUSD', url: 'https://diversifi.tech', icons: [] } })] : []),
   ],
-  transports: { [mainnet.id]: rpcTransport },
+  transports: { [mainnet.id]: FORK ? http('http://localhost:8545') : rpcTransport },
 });
 
 declare module 'wagmi' {

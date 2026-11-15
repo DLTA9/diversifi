@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { zeroAddress, type Address, type ContractFunctionParameters, type Hash } from 'viem';
-import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContract, useReadContracts, useSwitchChain, useWriteContract } from 'wagmi';
-import { erc20Abi, helpersAbi, indexTokenAbi, reserveManagerAbi, stateViewAbi, v4QuoterAbi } from '@/lib/abi';
+import { parseEventLogs, zeroAddress, type Address, type ContractFunctionParameters, type Hash } from 'viem';
+import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContract, useReadContracts, useSignTypedData, useSwitchChain, useWriteContract } from 'wagmi';
+import { erc20Abi, helpersAbi, indexTokenAbi, permit2Abi, reserveManagerAbi, routerAbi, stateViewAbi, v4QuoterAbi } from '@/lib/abi';
+import { buildSwap, DEADLINE_S, MAX_IMPACT, MIN_RATE, minOut, PERMIT2, PERMIT_TTL_S, permitTypedData, SLIPPAGE_BPS, UNIVERSAL_ROUTER, WARN_IMPACT } from '@/lib/swap';
 import { CHAIN_ID, evaluateGuard, TRUSTED, type GuardInput } from '@/lib/guard';
 import { COINS, ETHERSCAN, FOOTNOTE, HELPERS_ADDR, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
 import { maxMint, parseAmount, toNum, type TargetParam } from '@/lib/flow';
@@ -37,14 +38,8 @@ const down2 = (n: number) => Math.floor(n * 100) / 100;
 const E18 = 10n ** 18n;
 const RM = { address: RM_ADDR, abi: reserveManagerAbi } as const;
 
-// Swap (one coin in or out at market) isn't wired in-app yet; flip this when it ships.
-const SWAP_LIVE = false;
 // Coins with a DFiUSD pool on Uniswap V4 (all seven, checked with the V4 quoter on 15 Nov 2026).
 const POOLED = new Set(['USDC', 'DAI', 'USDS', 'USDT', 'GHO', 'FDUSD', 'frxUSD']);
-// Uniswap's swap page with both tokens and the amount filled in. Used while swaps run outside the app.
-const uniswapUrl = (from: string, to: string, value: string) =>
-  `https://app.uniswap.org/swap?chain=mainnet&inputCurrency=${from}&outputCurrency=${to}${value ? `&value=${value}&field=input` : ''}`;
-
 // Dev only: /app?drift=1 skews the reading so the rebalancing screens can be checked while the real reserve sits on target.
 // Read after mount (see useDrift) so the server and first client render match.
 const wantsDrift = () => process.env.NODE_ENV === 'development' && new URLSearchParams(window.location.search).has('drift');
@@ -106,13 +101,14 @@ export function AppFlow() {
   const { mutate: disconnect } = useDisconnect();
   const { mutate: switchChain } = useSwitchChain();
   const { mutateAsync: writeContractAsync } = useWriteContract();
+  const { mutateAsync: signTypedDataAsync } = useSignTypedData();
   const client = usePublicClient({ chainId: 1 });
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const [step, setStep] = useState<Step>('amount');
-  const [tab, setTab] = useState<Tab>(SWAP_LIVE ? 'swap' : 'contribute');
+  const [tab, setTab] = useState<Tab>('swap');
   // swap: 'buy' pays a coin for DFiUSD, 'sell' pays DFiUSD for a coin.
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [swapIdx, setSwapIdx] = useState<number | null>(null);
@@ -126,7 +122,7 @@ export function AppFlow() {
   const [rejected, setRejected] = useState(false);
   const [failed, setFailed] = useState('');
   const [toast, setToast] = useState<Toast>(null);
-  const [done, setDone] = useState<{ at: number; hash: Hash; sumIn: string; sumOut: string; title: string } | null>(null);
+  const [done, setDone] = useState<{ at: number; hash: Hash; sumIn: string; sumOut: string; title: string; inLabel: string } | null>(null);
   const [history, setHistory] = useState<Activity[]>([]);
   const [historyErr, setHistoryErr] = useState(false);
   const toastT = useRef(0);
@@ -274,6 +270,28 @@ export function AppFlow() {
   let swapErr = '';
   if (tab === 'swap' && swapIn > 0n && settled && swapQ.isError) swapErr = 'the pool can’t fill this amount. try a smaller one.';
   else if (tab === 'swap' && raw && ready && amt > swapPayBal) swapErr = 'amount is above your balance.';
+  const tokenIn = side === 'buy' ? sCoin.address : TOKEN_ADDR;
+  const tokenOut = side === 'buy' ? TOKEN_ADDR : sCoin.address;
+  const inT = side === 'buy' ? sCoin.t : 'DFiUSD';
+  const outT = side === 'buy' ? 'DFiUSD' : sCoin.t;
+  // Per dollar in, what comes out (all seven coins and DFiUSD aim at $1). Below MIN_RATE the pool is treated as unsafe.
+  const swapRate = swapOut !== null && amt > 0 ? swapOut / amt : null;
+  if (!swapErr && tab === 'swap' && swapRate !== null && swapRate < MIN_RATE) swapErr = `this pool pays only ${swapRate.toFixed(3)} per ${inT} right now, so swaps through it are switched off.`;
+  else if (!swapErr && tab === 'swap' && impact !== null && impact > MAX_IMPACT) swapErr = `price impact is too high (${(impact * 100).toFixed(2)}%). try a smaller amount.`;
+  const swapMin = swapQ.data && settled ? minOut(swapQ.data[0]) : null;
+  // What the wallet will be asked for: exact approval to Permit2 if missing, then a signature (or approval) for the router.
+  const swapAllow = useReadContracts({
+    allowFailure: false,
+    query: { enabled: enabled && tab === 'swap', refetchInterval: 30_000 },
+    contracts: [
+      { address: tokenIn, abi: erc20Abi, functionName: 'allowance', args: [user, PERMIT2], chainId: 1 },
+      { address: PERMIT2, abi: permit2Abi, functionName: 'allowance', args: [user, tokenIn, UNIVERSAL_ROUTER], chainId: 1 },
+    ],
+  });
+  const swapUnits = raw && raw > 0n ? (side === 'buy' ? raw / 10n ** BigInt(18 - sCoin.decimals) : raw) : 0n;
+  const needErc20 = !swapAllow.data || swapAllow.data[0] < swapUnits;
+  const needPermit = !swapAllow.data || swapAllow.data[1][0] < swapUnits || swapAllow.data[1][1] * 1000 < Date.now() + DEADLINE_S * 1000;
+  const swapValid = tab === 'swap' && swapPooled && !!raw && raw > 0n && !swapErr && ready && swapOut !== null && swapMin !== null && settled;
   const rateText = swapOut !== null && amt > 0
     ? side === 'buy' ? `1 ${sCoin.t} = ${(swapOut / amt).toFixed(4)} DFiUSD` : `1 DFiUSD = ${(swapOut / amt).toFixed(4)} ${sCoin.t}`
     : mid ? (side === 'buy' ? `1 ${sCoin.t} ≈ ${(1 / mid).toFixed(4)} DFiUSD` : `1 DFiUSD ≈ ${mid.toFixed(4)} ${sCoin.t}`) : '—';
@@ -331,7 +349,9 @@ export function AppFlow() {
 
   /* ---------- review summary, per route ---------- */
   const rebNeedsApproval = dir === 'mint' && rebUnits > allowances[rIdx];
-  const summary = rebalancing()
+  const summary = tab === 'swap'
+    ? { title: 'review your swap.', kind: (side === 'buy' ? 'BUY' : 'SELL') as ActivityRow['kind'], in: `${f2(amt)} ${inT}`, out: `${f2(swapOut ?? 0)} ${outT}`, extra: '', requests: [needErc20 && `approve ${inT}`, needPermit && 'sign', 'swap'].filter(Boolean).join(' + ') }
+    : rebalancing()
     ? dir === 'mint'
       ? { title: 'review your rebalance.', kind: 'MINT' as const, in: `${f2(amt)} ${rCoin.t}`, out: `${f2(rebDfi)} DFiUSD`, extra: reward > 0 ? `${f2(reward)} DFiUSD reward` : 'none right now', requests: rebNeedsApproval ? `approve ${rCoin.t} + deposit` : 'deposit' }
       : { title: 'review your rebalance.', kind: 'REDEEM' as const, in: `${f2(rebDfi)} DFiUSD`, out: `${f2(amt)} ${rCoin.t}`, extra: reward > 0 ? `${f2(reward)} DFiUSD less to burn` : 'none right now', requests: 'withdraw' }
@@ -360,7 +380,7 @@ export function AppFlow() {
   useEffect(() => { if (connected && !wrongNet) loadHistory(); else setHistory([]); }, [connected, wrongNet, loadHistory]);
 
   /* ---------- write flow ---------- */
-  const canReview = (rebValid || valid) && safe;
+  const canReview = (rebValid || valid || swapValid) && safe;
   // Re-run every safety check right before the wallet opens: network, pause switch, contracts. Returns a reason to stop, or ''.
   const preflight = async () => {
     if (chainId !== CHAIN_ID) return 'Your wallet is not on Ethereum mainnet. Switch networks and try again.';
@@ -382,7 +402,53 @@ export function AppFlow() {
     };
     try {
       let hash: Hash;
-      if (rebalancing()) {
+      let received = '';
+      if (tab === 'swap') {
+        const units = swapUnits;
+        const key = sKey;
+        // 1. A fresh quote and fresh price right now; the same limits as the form are checked again.
+        const [[q], s0, block] = await Promise.all([
+          client.readContract({ address: V4.quoter, abi: v4QuoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne: zeroForOne(key, tokenIn), exactAmount: units, hookData: '0x' }] }),
+          client.readContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(key)] }),
+          client.getBlock(),
+        ]);
+        const outNum = toNum(q, side === 'buy' ? 18 : sCoin.decimals);
+        const m = dfiPrice(key, s0[0], sCoin.decimals);
+        const imp = 1 - outNum / (side === 'buy' ? amt / m : amt * m);
+        if (outNum / amt < MIN_RATE || imp > MAX_IMPACT) throw Object.assign(new Error('limits'), { userMessage: 'the price moved past the safety limits. nothing was sent.' });
+        if (outNum < (swapOut ?? 0) * (1 - Number(SLIPPAGE_BPS) / 10_000)) throw Object.assign(new Error('moved'), { userMessage: 'the price moved since your review. go back to see the new quote.' });
+        const minAmountOut = minOut(q);
+        const now = Number(block.timestamp);
+        const steps = (needErc20 ? 1 : 0) + (needPermit ? 1 : 0) + 1;
+        let n = 0;
+        // 2. Exact approval of the coin to Permit2 (USDT needs a reset to zero first).
+        const a = await client.readContract({ address: tokenIn, abi: erc20Abi, functionName: 'allowance', args: [address!, PERMIT2] });
+        if (a < units) {
+          showToast({ color: 'var(--warn)', text: `approve ${inT} in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
+          if (sCoin.t === 'USDT' && side === 'buy' && a > 0n) await waitTx(await writeContractAsync({ address: tokenIn, abi: erc20Abi, functionName: 'approve', args: [PERMIT2, 0n], chainId: 1 }));
+          await waitTx(await writeContractAsync({ address: tokenIn, abi: erc20Abi, functionName: 'approve', args: [PERMIT2, units], chainId: 1 }));
+        }
+        // 3. Permission for the router: a signature for exactly this amount, 30 minutes. Smart-account wallets
+        //    (code at the address) approve on-chain instead, since their signatures are checked differently.
+        const [p2amt, p2exp, nonce] = await client.readContract({ address: PERMIT2, abi: permit2Abi, functionName: 'allowance', args: [address!, tokenIn, UNIVERSAL_ROUTER] });
+        let permit: Parameters<typeof buildSwap>[0]['permit'];
+        if (p2amt < units || p2exp <= now + DEADLINE_S) {
+          const smart = ((await client.getCode({ address: address! })) ?? '0x').length > 2;
+          if (smart) {
+            showToast({ color: 'var(--warn)', text: `allow the swap in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
+            await waitTx(await writeContractAsync({ address: PERMIT2, abi: permit2Abi, functionName: 'approve', args: [tokenIn, UNIVERSAL_ROUTER, units, now + PERMIT_TTL_S], chainId: 1 }));
+          } else {
+            showToast({ color: 'var(--warn)', text: `sign the permission in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
+            const td = permitTypedData(tokenIn, units, Number(nonce), now);
+            permit = { message: td.message, signature: await signTypedDataAsync(td) };
+          }
+        }
+        // 4. Build, simulate (stops here if anything would fail), then send.
+        const args = buildSwap({ key, tokenIn, tokenOut, amountIn: units, minAmountOut, now, permit });
+        await client.simulateContract({ address: UNIVERSAL_ROUTER, abi: routerAbi, functionName: 'execute', args, account: address! });
+        showToast({ color: 'var(--warn)', text: `confirm the swap in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
+        hash = await writeContractAsync({ address: UNIVERSAL_ROUTER, abi: routerAbi, functionName: 'execute', args, chainId: 1 });
+      } else if (rebalancing()) {
         if (rebNeedsApproval) {
           showToast({ color: 'var(--warn)', text: `approve ${rCoin.t} in your wallet · 1 of 2`, word: 'WAITING' });
           await approve(rIdx, rebUnits);
@@ -404,9 +470,16 @@ export function AppFlow() {
       showToast({ color: 'var(--warn)', text: 'waiting for the block.', word: 'PENDING' });
       const r = await client.waitForTransactionReceipt({ hash });
       if (r.status !== 'success') throw new Error('reverted');
-      const title = dir === 'mint' ? (rebalancing() ? 'rebalance confirmed.' : 'mint confirmed.') : (rebalancing() ? 'rebalance confirmed.' : 'redemption confirmed.');
-      setDone({ at: Date.now(), hash, sumIn: summary.in, sumOut: summary.out, title });
-      setHistory(h => [{ kind: summary.kind, hash, amt: dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
+      if (tab === 'swap') {
+        // What actually arrived, read from the receipt.
+        const got = parseEventLogs({ abi: erc20Abi, logs: r.logs, eventName: 'Transfer' })
+          .filter(l => l.address.toLowerCase() === tokenOut.toLowerCase() && l.args.to.toLowerCase() === address!.toLowerCase())
+          .reduce((t, l) => t + l.args.value, 0n);
+        received = `${f2(toNum(got, side === 'buy' ? 18 : sCoin.decimals))} ${outT}`;
+      }
+      const title = tab === 'swap' ? 'swap confirmed.' : dir === 'mint' ? (rebalancing() ? 'rebalance confirmed.' : 'mint confirmed.') : (rebalancing() ? 'rebalance confirmed.' : 'redemption confirmed.');
+      setDone({ at: Date.now(), hash, sumIn: summary.in, sumOut: received || summary.out, title, inLabel: tab === 'swap' ? 'you paid' : dir === 'mint' ? 'you added' : 'you redeemed' });
+      setHistory(h => [{ kind: summary.kind, hash, amt: tab === 'swap' ? (side === 'buy' ? `+ ${received || summary.out}` : `− ${summary.in}`) : dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
       setStep('done');
       showToast({ color: 'var(--ok)', text: title, word: 'CONFIRMED' }, 5000);
       reads.refetch();
@@ -414,8 +487,11 @@ export function AppFlow() {
       if (isRejection(e)) {
         setRejected(true);
         showToast({ color: 'var(--crit)', text: 'request rejected in wallet.', word: 'REJECTED' }, 4000);
+      } else if ((e as { userMessage?: string }).userMessage) {
+        setFailed((e as { userMessage: string }).userMessage);
+        showToast({ color: 'var(--crit)', text: 'stopped before sending.', word: 'STOPPED' }, 6000);
       } else {
-        setFailed('the transaction didn’t go through. nothing was minted or redeemed.');
+        setFailed(tab === 'swap' ? 'the swap didn’t go through. your coins didn’t move, apart from any approval you confirmed.' : 'the transaction didn’t go through. nothing was minted or redeemed.');
         showToast({ color: 'var(--crit)', text: 'transaction failed.', word: 'FAILED' }, 6000);
       }
       reads.refetch();
@@ -606,15 +682,13 @@ export function AppFlow() {
 
                   <dl className={s.dl} style={{ fontSize: 14 }}>
                     <div><dt>rate</dt><dd className="mono">{rateText}</dd></div>
-                    <div><dt>price impact</dt><dd className="mono" style={{ color: impact !== null && impact > 0.01 ? 'var(--warn)' : undefined }}>{impact !== null ? (impact < 0.0001 ? '< 0.01%' : (impact * 100).toFixed(2) + '%') : '—'}</dd></div>
+                    <div><dt>price impact</dt><dd className="mono" style={{ color: impact !== null && impact > WARN_IMPACT ? 'var(--warn)' : undefined }}>{impact !== null ? (impact < 0.0001 ? '< 0.01%' : (impact * 100).toFixed(2) + '%') : '—'}</dd></div>
+                    <div><dt>minimum received</dt><dd className="mono">{swapMin !== null ? `${f2(toNum(swapMin, side === 'buy' ? 18 : sCoin.decimals))} ${outT}` : '—'}</dd></div>
                     <div><dt>fee</dt><dd className="mono">0.01% Uniswap pool fee · no DiversiFi fee</dd></div>
                   </dl>
 
-                  <button type="button" className={`btn btn-primary ${s.b52}`} disabled>{SWAP_LIVE ? 'swap' : 'swap · coming soon'}</button>
+                  <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!swapValid || !safe} onClick={() => swapValid && safe && setStep('review')}>review swap</button>
                   <div className={s.alts}>
-                    {swapPooled
-                      ? <a href={side === 'buy' ? uniswapUrl(sCoin.address, TOKEN_ADDR, amount) : uniswapUrl(TOKEN_ADDR, sCoin.address, amount)} target="_blank" rel="noopener">for now, swap on Uniswap&nbsp;↗</a>
-                      : <span className="dim">{sCoin.t} has no DFiUSD pool yet.</span>}
                     <button type="button" className={s.advLink} onClick={() => goTab('contribute')}>or mint &amp; redeem with the reserve directly →</button>
                   </div>
                 </>
@@ -732,8 +806,18 @@ export function AppFlow() {
 
           {view === 'review' && (
             <div className={s.col}>
-              <div className="rail"><span>REVIEW · {dir === 'mint' ? 'MINT' : 'REDEEM'}{rebalancing() ? ' · REBALANCE' : ''}</span><span>STEP 2 OF 2</span></div>
+              <div className="rail"><span>REVIEW · {tab === 'swap' ? 'SWAP' : dir === 'mint' ? 'MINT' : 'REDEEM'}{rebalancing() ? ' · REBALANCE' : ''}</span><span>STEP 2 OF 2</span></div>
               <p className="h3">{summary.title}</p>
+              {tab === 'swap' ? (
+              <dl className={s.dl}>
+                <div><dt>you pay</dt><dd className="mono" style={{ fontWeight: 600 }}>{summary.in}</dd></div>
+                <div><dt>you receive</dt><dd className="mono" style={{ fontWeight: 600 }}>{summary.out}</dd></div>
+                <div><dt>minimum received</dt><dd className="mono">{swapMin !== null ? `${f2(toNum(swapMin, side === 'buy' ? 18 : sCoin.decimals))} ${outT}` : '—'}</dd></div>
+                <div><dt>price impact</dt><dd className="mono" style={{ color: impact !== null && impact > WARN_IMPACT ? 'var(--warn)' : undefined }}>{impact !== null ? (impact < 0.0001 ? '< 0.01%' : (impact * 100).toFixed(2) + '%') : '—'}</dd></div>
+                <div><dt>fee</dt><dd className="mono">0.01% Uniswap pool fee</dd></div>
+                <div><dt>wallet requests</dt><dd className="mono">{summary.requests}</dd></div>
+              </dl>
+              ) : (
               <dl className={s.dl}>
                 <div><dt>{dir === 'mint' ? (rebalancing() ? 'you add' : 'you deposit') : 'you redeem'}</dt><dd className="mono" style={{ fontWeight: 600 }}>{summary.in}</dd></div>
                 {rebalancing() && <div><dt>reward</dt><dd className="mono" style={{ color: reward > 0 ? 'var(--ok)' : undefined }}>{summary.extra}</dd></div>}
@@ -741,6 +825,7 @@ export function AppFlow() {
                 <div><dt>wallet requests</dt><dd className="mono">{summary.requests}</dd></div>
                 <div><dt>you receive</dt><dd className="mono" style={{ fontWeight: 600 }}>{summary.out}</dd></div>
               </dl>
+              )}
               {basket && !isMint && valid && (
                 <div className={s.mix}>
                   {COINS.map((c, i) => (
@@ -753,7 +838,7 @@ export function AppFlow() {
               )}
               {rejected && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>you rejected the request in your wallet. nothing was sent.</p>}
               {failed && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>{failed}</p>}
-              <p className="foot">{rebalancing() ? 'Worked out with the contract’s own maths from the reserve as it is now. If someone rebalances first, the reward can be smaller.' : 'Fees are read from the contract and already included above.'} Your wallet will ask you to confirm.</p>
+              <p className="foot">{tab === 'swap' ? `Swaps run through Uniswap's official router. Approvals cover exactly this amount. If the price drops more than ${Number(SLIPPAGE_BPS) / 100}% before your swap lands, it cancels itself and only the network fee is spent.` : rebalancing() ? 'Worked out with the contract’s own maths from the reserve as it is now. If someone rebalances first, the reward can be smaller.' : 'Fees are read from the contract and already included above.'} Your wallet will ask you to confirm.</p>
               <div className={s.btnRow}>
                 <button type="button" className={`btn btn-secondary ${s.b52}`} style={{ flex: 1 }} disabled={pending} onClick={() => { setStep('amount'); setRejected(false); setFailed(''); }}>back</button>
                 <button type="button" className={`btn btn-primary ${s.b52}`} style={{ flex: 2 }} disabled={pending} onClick={confirm}>
@@ -768,7 +853,7 @@ export function AppFlow() {
               <div className="rail"><span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ok)' }}><i className="dot" style={{ background: 'var(--ok)' }} />CONFIRMED</span><span>{hhmm(done.at)} UTC</span></div>
               <p style={{ fontSize: 'clamp(28px, 3vw, 40px)', lineHeight: 1.08, letterSpacing: '-0.03em' }}>{done.title}</p>
               <dl className={s.dl}>
-                <div><dt>{dir === 'mint' ? 'you added' : 'you redeemed'}</dt><dd className="mono">{done.sumIn}</dd></div>
+                <div><dt>{done.inLabel}</dt><dd className="mono">{done.sumIn}</dd></div>
                 <div><dt>you received</dt><dd className="mono" style={{ fontWeight: 600 }}>{done.sumOut}</dd></div>
                 <div><dt>transaction</dt><dd><a href={txUrl(done.hash)} target="_blank" rel="noopener" className="mono" style={{ fontSize: 14 }}>{short(done.hash)} · etherscan ↗</a></dd></div>
               </dl>
