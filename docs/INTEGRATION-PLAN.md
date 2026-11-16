@@ -212,6 +212,7 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - connect MetaMask, Rabby and a WalletConnect wallet to diversifi.tech once it points at the new Worker
    - if any of them warns, file a false-positive report at report.blockaid.io and an issue on github.com/MetaMask/eth-phishing-detect, from the domain owner's side
    - WalletConnect now reports the real page address (`lib/wagmi.ts`), so its Verify check sees no mismatch
+   - **The reserve contract itself is marked "untrusted" by Blockaid** (seen 16 Nov 2026 on a basket-mint approval: "High-risk approval … contract 0x8978f3a0…8327 involved in the transaction is untrusted"). This is a reputation flag, not a malicious finding, but every user who mints or rebalances will see it. **Client action:** the DiversiFi team reports it as a false positive to Blockaid (the "Report an issue" link in the MetaMask warning, or report.blockaid.io), naming the ReserveManagerV1, DFiUSD, ReserveManagerHelpers and timelock addresses with their Sourcify links and audit.
 6. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
 
 ---
