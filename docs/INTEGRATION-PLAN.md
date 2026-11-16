@@ -208,7 +208,11 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - Sepolia run
    - small-amount mainnet run with our own test wallet (~$50 stablecoins + ~$10 ETH, mostly returned)
    - outside review declined by the client, so our own simulation, fork and testnet checks must be thorough
-5. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
+5. **Wallet scam warnings (found 16 Nov 2026):** the MetaMask extension shows "This site shows signs of phishing or wallet-draining activity" on the preview address. The address is not on MetaMask's public list (eth-phishing-detect; only the unrelated `diversifi-ai.com` is). The flag comes from the live Blockaid scan, which distrusts a new `workers.dev` address carrying a known project's name. At go-live:
+   - connect MetaMask, Rabby and a WalletConnect wallet to diversifi.tech once it points at the new Worker
+   - if any of them warns, file a false-positive report at report.blockaid.io and an issue on github.com/MetaMask/eth-phishing-detect, from the domain owner's side
+   - WalletConnect now reports the real page address (`lib/wagmi.ts`), so its Verify check sees no mismatch
+6. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
 
 ---
 
