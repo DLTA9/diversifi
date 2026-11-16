@@ -204,6 +204,9 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - swap 9.42 DFiUSD → 9.419 USDC (tx 0xc9ca7a0b…), rate 0.99993, signed Permit2 route; approval and permit back to zero afterwards
      - rebalancing can't run on mainnet while the basket is balanced; it is covered by the fork test
      - found and fixed: unclear error when the wallet can't cover the maximum network fee
+     - **phone:** the MetaMask button now opens the site inside the MetaMask app (metamask.app.link/dapp/…). A swap of 1 USDC → 0.9998 DFiUSD from an iPhone went through (tx 0x431f7a61…), approvals back to zero.
+     - WalletConnect deep links were blocked by a third-party phone browser ("couldn't be opened"). Phone users should use Safari or Chrome, or the wallet's own browser.
+     - not yet connected with a real wallet: Coinbase Wallet, and WalletConnect from Safari
    - **EIP-6963 wallet discovery: dropped (16 Nov 2026, our decision).** Rabby and most browser wallets answer to the MetaMask button, and WalletConnect covers mobile wallets.
 
    When a flow passes its tests, remove its "coming soon" state (`SWAP_LIVE`, the SOON tag, the Uniswap fallback link).
