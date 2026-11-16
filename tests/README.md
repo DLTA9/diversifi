@@ -12,8 +12,11 @@ Run from the `web` folder. All three exit with a non-zero code if any check fail
 Start the private copy of mainnet (Foundry's Anvil) with the Alchemy key from `.dev.vars`:
 
 ```bash
-anvil --fork-url "$(awk '/^RPC_URL=/{print substr($0,9)}' .dev.vars)" --port 8545 --silent
+anvil --fork-url "$(awk '/^RPC_URL=/{print substr($0,9)}' .dev.vars)" --port 8545 --silent --compute-units-per-second 150
 ```
+
+Keep `--compute-units-per-second 150`: Alchemy's free plan allows 300 compute units per second, and an uncapped fork
+start-up burst goes over it (16 Nov 2026). Stop Anvil when done; it is only needed while testing.
 
 To click through the app on that copy with test money: run the dev server and open
 `/app?preview=<test wallet>&fork=1`. Both switches only exist in development builds.
