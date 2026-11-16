@@ -201,7 +201,7 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - swap 8.66 USDC → 8.658 DFiUSD (tx 0x4a57c363…), rate 0.9998, as quoted
      - basket redeem 9 DFiUSD (tx 0x6dbc084e…): all 7 coins received exactly equal to `quoteBurn` one block earlier, to the last unit
      - basket mint 8.98 DFiUSD (tx 0x78dbc284…): all 7 coins taken exactly equal to `quoteMint` one block earlier, 8.98 DFiUSD received
-     - still to do with real money: sell DFiUSD → coin. It's fork-tested; the wallet ran low on ETH.
+     - swap 9.42 DFiUSD → 9.419 USDC (tx 0xc9ca7a0b…), rate 0.99993, signed Permit2 route; approval and permit back to zero afterwards
      - rebalancing can't run on mainnet while the basket is balanced; it is covered by the fork test
      - found and fixed: unclear error when the wallet can't cover the maximum network fee
    - **EIP-6963 wallet discovery: dropped (16 Nov 2026, our decision).** Rabby and most browser wallets answer to the MetaMask button, and WalletConnect covers mobile wallets.
