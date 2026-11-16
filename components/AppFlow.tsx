@@ -13,6 +13,7 @@ import { quoteRebalance, room, type RebState } from '@/lib/rebalance';
 import { dfiPrice, poolId, poolKey, V4, zeroForOne } from '@/lib/uniswap';
 import { f2, hhmm, type ReserveReading } from '@/lib/reserve';
 import { CHAIN_NAMES, PREVIEW_ADDR, WALLETS } from '@/lib/wagmi';
+import { hasAccepted, rememberAcceptance } from '@/lib/terms';
 import { Mark, MiniBar, TokenIcon, Wordmark } from './brand';
 import { ReserveBar } from './ReserveBar';
 import { useReserve } from './ReserveProvider';
@@ -147,7 +148,12 @@ export function AppFlow() {
 
   const connected = mounted && isConnected;
   const wrongNet = connected && chainId !== 1;
-  const view = !connected ? 'connect' : wrongNet ? 'wrong-network' : step;
+  // Terms step: shown once per wallet (per terms version) before anything else. See lib/terms.ts.
+  const [accepted, setAccepted] = useState(false);
+  const [tick, setTick] = useState({ terms: false, person: false });
+  useEffect(() => { setAccepted(!!address && hasAccepted(address)); setTick({ terms: false, person: false }); }, [address]);
+  const accept = () => { if (!address || !tick.terms || !tick.person) return; rememberAcceptance(address); setAccepted(true); };
+  const view = !connected ? 'connect' : wrongNet ? 'wrong-network' : !accepted ? 'terms' : step;
 
   const showToast = (t: Toast, ms?: number) => {
     clearTimeout(toastT.current);
@@ -390,6 +396,7 @@ export function AppFlow() {
   // Re-run every safety check right before the wallet opens: network, pause switch, contracts. Returns a reason to stop, or ''.
   const preflight = async () => {
     if (chainId !== CHAIN_ID) return 'Your wallet is not on Ethereum mainnet. Switch networks and try again.';
+    if (!address || !hasAccepted(address)) return 'Please accept the Terms of Service first.';
     const [p, g] = await Promise.all([loadPause(), guardReads.refetch()]);
     const fresh = evaluateGuard(guardInput(g.data, p));
     return fresh.state === 'ok' ? '' : fresh.reason;
@@ -641,6 +648,26 @@ export function AppFlow() {
                 ))}
               </div>
               <p className="foot">Ethereum mainnet only. Connecting doesn&apos;t move any funds.</p>
+            </div>
+          )}
+
+          {view === 'terms' && (
+            <div className={s.col} style={{ flex: 1 }}>
+              <div className="rail"><span>BEFORE YOU START</span><span>{short(address)}</span></div>
+              <p className="h3">two quick confirmations.</p>
+              <p className="dim pretty">You only do this once for this wallet. Read the <Link href="/terms" target="_blank">Terms of Service&nbsp;↗</Link> first.</p>
+              <label className={s.check}>
+                <input type="checkbox" checked={tick.terms} onChange={e => setTick(t => ({ ...t, terms: e.target.checked }))} />
+                <span>I have read and agree to the Terms of Service.</span>
+              </label>
+              <label className={s.check}>
+                <input type="checkbox" checked={tick.person} onChange={e => setTick(t => ({ ...t, person: e.target.checked }))} />
+                <span>I am not a US person: not a citizen or resident of the United States, and not a company organised there. I am also not a Prohibited Person under the Terms, and I am not using a VPN or similar to get around these limits.</span>
+              </label>
+              <div className={s.btnRow}>
+                <button type="button" className={`btn btn-secondary ${s.b52}`} style={{ flex: 1 }} onClick={() => disconnect()}>disconnect</button>
+                <button type="button" className={`btn btn-primary ${s.b52}`} style={{ flex: 2 }} disabled={!tick.terms || !tick.person} onClick={accept}>accept</button>
+              </div>
             </div>
           )}
 

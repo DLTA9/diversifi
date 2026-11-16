@@ -147,3 +147,9 @@
 /* shown when a safety check blocks transactions (lib/guard.ts) */
 .guardBanner { margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--crit); border-radius: 8px; font-size: 14px; line-height: 1.5; color: var(--fg); background: color-mix(in srgb, var(--crit) 10%, transparent); }
 .guardBanner strong { font-weight: 600; color: var(--crit); }
+
+/* terms step */
+.check { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--strong); border-radius: 8px; font-size: 15px; line-height: 1.5; cursor: pointer; transition: border-color 160ms; }
+.check:hover { border-color: var(--fg); }
+.check:has(input:checked) { border-color: var(--fg); }
+.check input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--fg); cursor: pointer; }

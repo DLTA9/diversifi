@@ -195,7 +195,8 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
       - simulated before sending
    - fork test `tests/reserve.fork.test.ts`: 16/16, with the reward matching the contract to the last unit
    - all four flows clicked through in the app on the fork, including a "someone else rebalanced first" case that stopped correctly
-   - **next: step 4.** Sepolia run, a small real-money run with our own wallet, terms acceptance gate, EIP-6963 wallet discovery
+   - **terms step: done (16 Nov 2026).** After connecting, each wallet must tick "I agree to the Terms" and "I am not a US person / not a Prohibited Person" once per terms version (`lib/terms.ts`, stored in the browser). It is checked again before every signature.
+   - **EIP-6963 wallet discovery: dropped (16 Nov 2026, our decision).** Rabby and most browser wallets answer to the MetaMask button, and WalletConnect covers mobile wallets.
 
    When a flow passes its tests, remove its "coming soon" state (`SWAP_LIVE`, the SOON tag, the Uniswap fallback link).
 4. **Testing:**
