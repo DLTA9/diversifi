@@ -196,6 +196,8 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - fork test `tests/reserve.fork.test.ts`: 16/16, with the reward matching the contract to the last unit
    - all four flows clicked through in the app on the fork, including a "someone else rebalanced first" case that stopped correctly
    - **terms step: done (16 Nov 2026).** After connecting, each wallet must tick "I agree to the Terms" and "I am not a US person / not a Prohibited Person" once per terms version (`lib/terms.ts`, stored in the browser). It is checked again before every signature.
+   - **Sepolia run: skipped (16 Nov 2026, our decision).** Sepolia has different Uniswap contracts and test coins, and testing there would mean loosening the mainnet-only lock. The Anvil mainnet-fork tests run the real contracts, pools and coins instead.
+   - **next: small real-money run** on the preview site with a fresh wallet (~$50 USDC + ~$10 ETH): swap 20 USDC → DFiUSD, basket redeem 10, basket mint ~5, swap the rest back. Rebalancing can't run on mainnet while the basket is balanced; it is covered by the fork test.
    - **EIP-6963 wallet discovery: dropped (16 Nov 2026, our decision).** Rabby and most browser wallets answer to the MetaMask button, and WalletConnect covers mobile wallets.
 
    When a flow passes its tests, remove its "coming soon" state (`SWAP_LIVE`, the SOON tag, the Uniswap fallback link).
