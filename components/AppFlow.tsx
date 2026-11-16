@@ -578,7 +578,19 @@ export function AppFlow() {
     return () => window.removeEventListener('unhandledrejection', onReject);
   }, [connectFailed]);
 
+  // On a phone, a normal browser has no MetaMask inside it. The MetaMask button then opens this page inside the
+  // MetaMask app's own browser (MetaMask's official link), where it connects like on a laptop.
+  const [env, setEnv] = useState({ phone: false, injected: false });
+  useEffect(() => setEnv({
+    phone: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+    injected: !!(window as { ethereum?: unknown }).ethereum,
+  }), []);
   const pick = (id: string) => {
+    if (id === 'metaMask' && !env.injected) {
+      if (env.phone) { window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`; return; }
+      showToast({ color: 'var(--warn)', text: 'MetaMask isn’t installed in this browser. Add the extension, or use WalletConnect.', word: 'NOT FOUND' }, 6000);
+      return;
+    }
     const c = connectors.find(k => k.id === id);
     if (c) connect({ connector: c, chainId: 1 }, { onError: connectFailed });
     // WalletConnect without a project ID has no connector yet.
@@ -654,7 +666,7 @@ export function AppFlow() {
               <div id="wallets" className={s.wallets}>
                 {WALLETS.map(w => (
                   <button key={w.id} type="button" className={s.walletRow} onClick={() => pick(w.id)} disabled={connecting}>
-                    <span>{w.name}</span><span className={s.kind}>{w.kind}</span>
+                    <span>{w.name}</span><span className={s.kind}>{w.id === 'metaMask' && env.phone && !env.injected ? 'OPENS APP' : w.kind}</span>
                   </button>
                 ))}
               </div>
