@@ -4,6 +4,9 @@ import { mainnet } from 'wagmi/chains';
 import { rpcTransport } from './reserve';
 
 const wcProjectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
+// The address the app is really running on. Wallets compare this with the page they see; a mismatch (say, claiming
+// diversifi.tech while on the preview address) makes WalletConnect wallets warn about phishing.
+const SITE_ORIGIN = typeof window !== 'undefined' ? window.location.origin : 'https://diversifi.tech';
 
 // Dev only: /app?preview=0x… connects a read-only mock wallet for that address, to see the connected
 // screens with real balances. It cannot sign. Stripped from production builds by the NODE_ENV check.
@@ -34,7 +37,7 @@ export const wagmiConfig = createConfig({
     injected({ target: 'metaMask' }),
     coinbaseWallet({ appName: 'DiversiFi', appLogoUrl: 'https://diversifi.tech/app-icon-512.png' }),
     ...(PREVIEW_ADDR ? [mock({ accounts: [PREVIEW_ADDR] })] : []),
-    ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true, metadata: { name: 'DiversiFi', description: 'Mint and redeem DFiUSD', url: 'https://diversifi.tech', icons: [] } })] : []),
+    ...(wcProjectId ? [walletConnect({ projectId: wcProjectId, showQrModal: true, metadata: { name: 'DiversiFi', description: 'Swap, mint and redeem DFiUSD', url: SITE_ORIGIN, icons: [`${SITE_ORIGIN}/app-icon-512.png`] } })] : []),
   ],
   transports: { [mainnet.id]: FORK ? http('http://localhost:8545') : rpcTransport },
 });
