@@ -79,6 +79,14 @@ function gaps(r: ReserveReading) {
   });
 }
 
+/** The wallet can't cover the network fee (it must hold the maximum fee up front, not just what is charged). */
+function isOutOfGas(e: unknown) {
+  for (let c = e as { name?: string; message?: string; cause?: unknown } | undefined; c; c = c.cause as typeof c) {
+    if (c.name === 'InsufficientFundsError' || /insufficient funds/i.test(c.message ?? '')) return true;
+  }
+  return false;
+}
+
 function isRejection(e: unknown) {
   for (let c = e as { name?: string; code?: number; cause?: unknown } | undefined; c; c = c.cause as typeof c) {
     if (c.name === 'UserRejectedRequestError' || c.code === 4001) return true;
@@ -519,6 +527,9 @@ export function AppFlow() {
       if (isRejection(e)) {
         setRejected(true);
         showToast({ color: 'var(--crit)', text: 'request rejected in wallet.', word: 'REJECTED' }, 4000);
+      } else if (isOutOfGas(e)) {
+        setFailed('your wallet doesn’t have enough ETH for the network fee. nothing was sent. add a little ETH (about $5 covers many transactions) and try again.');
+        showToast({ color: 'var(--crit)', text: 'not enough ETH for the network fee.', word: 'NO GAS' }, 6000);
       } else if ((e as { userMessage?: string }).userMessage) {
         setFailed((e as { userMessage: string }).userMessage);
         showToast({ color: 'var(--crit)', text: 'stopped before sending.', word: 'STOPPED' }, 6000);
