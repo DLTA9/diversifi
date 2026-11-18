@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Crops, Wordmark } from '@/components/brand';
-import { DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { APP_URL, DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { og } from '@/lib/site';
 import content from './content.json';
 import s from './terms.module.css';
@@ -58,7 +58,7 @@ export default function Terms() {
       <nav aria-label="primary" className={s.nav}>
         <div className={`wrap ${s.navIn}`}>
           <Link href="/" aria-label="DiversiFi home" className={s.logo}><Wordmark /></Link>
-          <Link href="/app" className="btn btn-primary btn-nav">open app</Link>
+          <a href={APP_URL} className="btn btn-primary btn-nav">open app</a>
         </div>
       </nav>
 

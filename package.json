@@ -8,18 +8,13 @@
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "test": "npx -y tsx@4.19.2 tests/guard.test.ts && npx -y tsx@4.19.2 tests/flow.test.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@coinbase/wallet-sdk": "4.4.0",
-    "@tanstack/react-query": "5.105.1",
-    "@walletconnect/ethereum-provider": "2.26.0",
     "next": "16.4.5",
     "react": "19.2.9",
     "react-dom": "19.2.9",
-    "viem": "2.57.14",
-    "wagmi": "3.7.9"
+    "viem": "2.57.14"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.16",

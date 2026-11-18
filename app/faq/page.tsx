@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Crops, Wordmark } from '@/components/brand';
-import { DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { APP_URL, DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { faqs, faqText } from '@/lib/faq';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import { og } from '@/lib/site';
@@ -38,7 +38,7 @@ export default async function Faq() {
       <nav aria-label="primary" className={shell.nav}>
         <div className={`wrap ${shell.navIn}`}>
           <Link href="/" aria-label="DiversiFi home" className={shell.logo}><Wordmark /></Link>
-          <Link href="/app" className="btn btn-primary btn-nav">open app</Link>
+          <a href={APP_URL} className="btn btn-primary btn-nav">open app</a>
         </div>
       </nav>
 

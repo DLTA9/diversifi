@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, ContractRow } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, COINGECKO_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { APP_URL, AUDIT_URL, COINGECKO_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
@@ -51,7 +51,7 @@ export default async function Home() {
       <nav aria-label="primary" className={s.nav}>
         <div className={`wrap ${s.navIn}`}>
           <a href="#top" aria-label="DiversiFi home" className={s.logo}><Wordmark /></a>
-          <Link href="/app" className="btn btn-primary btn-nav">open app</Link>
+          <a href={APP_URL} className="btn btn-primary btn-nav">open app</a>
         </div>
       </nav>
 
@@ -67,7 +67,7 @@ export default async function Home() {
               <p className="h1">structured stability.</p>
               <p className="dim pretty" style={{ maxWidth: '34em' }}>Every DFiUSD is backed 1:1 by a basket of diversified USD stablecoins, no single issuer can sink it.</p>
               <div className={s.ctaRow}>
-                <Link href="/app" className="btn btn-primary">get DFiUSD</Link>
+                <a href={APP_URL} className="btn btn-primary">get DFiUSD</a>
                 <a href="#reserve" className="btn btn-secondary">check reserves</a>
               </div>
               <p className={s.source}>REDEEM FOR THE UNDERLYING COINS ANY TIME{feeLine && <> · {feeLine}</>}</p>

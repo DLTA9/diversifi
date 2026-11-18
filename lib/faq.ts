@@ -1,4 +1,4 @@
-import { AUDIT_URL, COINS, rmUrl } from './coins';
+import { APP_URL, AUDIT_URL, COINS, rmUrl } from './coins';
 import type { ReserveReading } from './reserve';
 
 // One source for the /faq page, its FAQPage JSON-LD and llms.txt, so they never drift apart.
@@ -63,11 +63,11 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
     {
       // DRAFT for client sign-off.
       q: 'how do I get DFiUSD?',
-      a: ['Swap USDC, USDT, DAI or any other basket coin for DFiUSD in the ', { text: 'DiversiFi app', href: '/app' }, ', which routes through the DFiUSD pools on Uniswap. You can also mint it with the full basket, or with a single coin the reserve is short of.'],
+      a: ['Swap USDC, USDT, DAI or any other basket coin for DFiUSD in the ', { text: 'DiversiFi app', href: APP_URL }, ', which routes through the DFiUSD pools on Uniswap. You can also mint it with the full basket.'],
     },
     {
       q: 'how do I redeem DFiUSD?',
-      a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: '/app' }, ' and burn DFiUSD. You receive the reserve’s current mix of every coin in the basket, less any redeem fee, or swap it for a single coin.'],
+      a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: APP_URL }, ' and burn DFiUSD. You receive the reserve’s current mix of every coin in the basket, less any redeem fee, or swap it for a single coin.'],
     },
     {
       // DRAFT for client sign-off.

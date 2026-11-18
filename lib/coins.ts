@@ -42,6 +42,8 @@ export const coinUrl = (c: Coin) => `${ETHERSCAN}/token/${c.address}?a=${RM_ADDR
 export const txUrl = (hash: string) => `${ETHERSCAN}/tx/${hash}`;
 
 export const DOCS_URL = 'https://docs.diversifi.tech/';
+// The DiversiFi app (swap, mint, redeem) is run by the DiversiFi team; this site only links to it.
+export const APP_URL = 'https://app.diversifi.tech';
 export const TERMS_URL = '/terms';
 // Copies of the PDFs live in public/docs/ (taken from the old site 18 Nov 2026), so these addresses keep working after the switch.
 export const WHITEPAPER_URL = 'https://diversifi.tech/docs/whitepaper.pdf';

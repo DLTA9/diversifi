@@ -1,4 +1,4 @@
-import { AUDIT_URL, COINS, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, TOKEN_ADDR, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { APP_URL, AUDIT_URL, COINS, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, TOKEN_ADDR, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { faqs, faqText } from '@/lib/faq';
 import { FALLBACK_READING, fmtBlock, readReserve, type ReserveReading } from '@/lib/reserve';
 import { SITE_URL } from '@/lib/site';
@@ -45,7 +45,7 @@ export async function GET() {
     '## Links',
     '',
     `- [Home](${SITE_URL}/): what DFiUSD is, the live reserve, and what happens if an issuer fails`,
-    `- [Mint and redeem](${SITE_URL}/app): the DiversiFi app`,
+    `- [DiversiFi app](${APP_URL}): swap, mint and redeem DFiUSD`,
     `- [FAQ](${SITE_URL}/faq): backing, depegs, fees, redemption, audits and risks`,
     `- [Documentation](${DOCS_URL}): protocol mechanics, contract API and risks`,
     `- [Whitepaper](${WHITEPAPER_URL}): PDF`,
