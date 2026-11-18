@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, ContractRow } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, COINGECKO_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, timelockUrl, TOKEN_ADDR, tokenUrl, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, COINGECKO_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
@@ -18,7 +18,6 @@ export default async function Home() {
   // Fees as the contract reports them right now; left out if the chain read failed, so the page never states a stale fee.
   const pctFee = (f: number) => `${+(f * 100).toFixed(2)}%`;
   const feeLine = !ok ? '' : initial.mintFee === 0 && initial.burnFee === 0 ? 'NO MINT OR REDEEM FEE TODAY' : `MINT FEE ${pctFee(initial.mintFee)} · REDEEM FEE ${pctFee(initial.burnFee)}`;
-  const feeShort = !ok ? 'read from the contract' : `${pctFee(initial.mintFee)} mint · ${pctFee(initial.burnFee)} redeem`;
 
   const productLd = {
     '@context': 'https://schema.org',
@@ -202,10 +201,6 @@ export default async function Home() {
               <ContractRow name="ReserveManagerV1" meta="RESERVE" address={RM_ADDR} href={rmUrl} />
               <dl className={s.dl}>
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
-                <div><dt>BASKET</dt><dd>{COINS.length} stablecoins · {new Set(COINS.map(c => c.issuer)).size} issuers</dd></div>
-                <div><dt>REDEEM</dt><dd>any time, for the underlying coins</dd></div>
-                <div><dt>FEES</dt><dd>{feeShort}</dd></div>
-                <div><dt>GOVERNANCE</dt><dd>7‑day timelock<span className="dim">·</span><a href={timelockUrl} target="_blank" rel="noopener" aria-label="DiversiFi governance timelock contract on Etherscan">timelock ↗</a></dd></div>
                 <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
                 {/* TODO(open item 4): link the CertiK report once public. */}
                 <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
