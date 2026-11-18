@@ -190,9 +190,9 @@
 
 /* section 06 use cases and footer listings */
 .uses { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.use { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 12px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-.use .stepNum { padding-top: 9px; }
-.use .guardTitle { margin-top: 4px; margin-bottom: 6px; }
+.use { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.useIcon { height: 40px; display: flex; align-items: center; }
+.useTitle { font-weight: 400; font-size: 17px; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 4px; }
 .sourceLink { text-decoration: none; display: inline-flex; align-items: center; min-height: 24px; }
 .sourceLink:hover { color: var(--fg); }
 .listedOn { display: inline-flex; align-items: center; min-height: 44px; }

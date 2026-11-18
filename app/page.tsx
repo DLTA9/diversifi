@@ -178,20 +178,20 @@ export default async function Home() {
         <section id="docs" aria-label="for treasuries and protocols" className={`wrap ${s.section}`}>
           <div className="rail"><span>06 · FOR TREASURIES &amp; PROTOCOLS</span><span>RESERVE · COLLATERAL · LIQUIDITY</span></div>
           <div className={s.intGrid}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <h2 className="h2">a dollar reserve that doesn&apos;t bet on one issuer.</h2>
-              <p className="dim pretty" style={{ maxWidth: '32em' }}>For DAO treasuries, protocols and funds that hold dollars or accept them as collateral. One token spreads the exposure across seven stablecoins from six issuers, and every balance can be checked on-chain.</p>
-              <ol className={s.uses}>
-                {USES.map((u, i) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <h2 className="h2">a dollar reserve for treasuries.</h2>
+              <p className="dim pretty" style={{ maxWidth: '30em' }}>For DAOs, protocols and funds. One token, seven stablecoins, six issuers, every balance on-chain.</p>
+              <ul className={s.uses}>
+                {USES.map(u => (
                   <li key={u.title} className={s.use}>
-                    <span className={s.stepNum}>{String(i + 1).padStart(2, '0')}</span>
+                    <div aria-hidden="true" className={s.useIcon}>{u.icon}</div>
                     <div>
-                      <h3 className={s.guardTitle}>{u.title}</h3>
+                      <h3 className={s.useTitle}>{u.title}</h3>
                       <p className={s.stepBody}>{u.body}</p>
                     </div>
                   </li>
                 ))}
-              </ol>
+              </ul>
               <div className={s.ctaRow}>
                 <a href={`${CONTACT_MAIL}?subject=${encodeURIComponent('DFiUSD for our treasury or protocol')}`} className="btn btn-primary">talk to the team</a>
                 <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary">read the docs ↗</a>
@@ -251,17 +251,47 @@ export default async function Home() {
   );
 }
 
-/* ---------- section 06 use cases: facts a treasury can verify itself ---------- */
-const USES = [
-  { title: 'treasury reserve.', body: 'Hold idle dollars in one balance instead of with one issuer. Redeem for the underlying coins whenever you need them.' },
-  { title: 'collateral and liquidity.', body: 'An ERC-20 on Ethereum mainnet, with DFiUSD pools on Uniswap against all seven basket coins.' },
-  { title: 'a risk review you can run yourself.', body: 'Targets, holdings and rules are readable on Etherscan, and admin changes wait out a 7‑day timelock, so nothing changes overnight.' },
-];
-
 /* ---------- section 05 safeguard glyphs (div-built, aria-hidden) ---------- */
 const EVEN7 = [1, 1, 1, 1, 1, 1, 1];
 
 const blk = (h: number, bg = 'var(--strong)', extra?: React.CSSProperties) => ({ height: h, background: bg, ...extra });
+
+/* ---------- section 06 use cases: facts a treasury can verify itself, each with a div-built glyph (aria-hidden) ---------- */
+const USES = [
+  {
+    title: 'treasury reserve.',
+    body: 'Hold dollars without picking one issuer. Redeem whenever you need them.',
+    // the seven basket coins (their reserve-bar colours), held inside one vault
+    icon: (
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, padding: 4, border: '1.5px solid var(--dim)', borderRadius: 4 }}>
+        {COINS.map(c => <i key={c.t} className={s.blk} style={blk(20, c.color, { width: 4 })} />)}
+      </div>
+    ),
+  },
+  {
+    title: 'collateral and liquidity.',
+    body: 'An ERC-20 on mainnet, with Uniswap pools against all seven coins.',
+    // the basket coins paired with DFiUSD, like a pool
+    icon: (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>{COINS.slice(0, 3).map((c, i) => <i key={c.t} className={s.blk} style={blk([16, 26, 20][i], c.color, { width: 6 })} />)}</span>
+        <span className="mono dim" style={{ fontSize: 14, lineHeight: 1 }}>⇄</span>
+        <i className={s.blk} style={blk(26, 'var(--signal)', { width: 12 })} />
+      </div>
+    ),
+  },
+  {
+    title: '7\u2011day timelock.',
+    body: 'Admin changes wait a week, so nothing changes overnight.',
+    // seven day-ticks, the last one lit
+    icon: (
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
+        {[0, 1, 2, 3, 4, 5, 6].map(i => <i key={i} style={{ display: 'block', width: 3, height: i === 6 ? 28 : 14, borderRadius: 1, background: i === 6 ? 'var(--signal)' : 'var(--dim)' }} />)}
+        <span className="mono" style={{ fontSize: 11, lineHeight: 1, marginLeft: 4, color: 'var(--signal)' }}>7D</span>
+      </div>
+    ),
+  },
+];
 
 const GUARDS = [
   {
