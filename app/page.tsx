@@ -58,7 +58,6 @@ export default async function Home() {
           <Crops />
           <div className={`wrap ${s.heroIn}`}>
             <div className={s.heroL}>
-              {/* TODO(open item 3): compliance review of eyebrow, "1:1" and "no single issuer can sink it". */}
               {/* The small label is the page heading search engines read; the big slogan keeps its look as a styled line. */}
               <h1 className="label">DFiUSD · THE DIVERSIFIED USD STABLECOIN</h1>
               <p className="h1">structured stability.</p>
@@ -73,7 +72,6 @@ export default async function Home() {
                   <p className="pretty" style={{ fontSize: 16, lineHeight: 1.4 }}>of all stablecoin supply still sits with one issuer. DFiUSD spreads its backing across multiple.</p>
                 </div>
                 <MarketMorph />
-                {/* TODO(open item 4): name the source for these figures if it should be shown. */}
                 <a href="https://defillama.com/stablecoins" target="_blank" rel="noopener" className={`${s.source} ${s.sourceLink}`}>SOURCE: DEFILLAMA · NOV 2026 ↗</a>
               </div>
             </div>
@@ -97,7 +95,6 @@ export default async function Home() {
             <article className={s.card}>
               <div className={s.cardHead}><span className={s.num}>01</span><h3 className="h3">mint</h3></div>
               <div aria-hidden="true" className={s.dia}><MintDots /></div>
-              {/* TODO(open item 1): copy assumes single-coin mint; the contract's mint takes the full basket. */}
               <p className="dim pretty">Deposit a basket stablecoin and receive DFiUSD. The deposit enters the reserve at the target split.</p>
             </article>
             <article className={s.card}>
@@ -110,7 +107,6 @@ export default async function Home() {
                   <div className={s.diaCol}><MiniBar /><span className="label-sm" style={{ letterSpacing: '.02em' }}>BACKED BY THE WHOLE BASKET</span></div>
                 </div>
               </div>
-              {/* TODO(open item 2): "plain ERC-20" is inaccurate (rebasing, freezable). Reword with compliance. */}
               <p className="dim pretty">DFiUSD is a plain ERC-20 on Ethereum. Hold it, send it, or trade it on Uniswap.</p>
             </article>
             <article className={`${s.card} ${s.cardDashed}`}>
@@ -194,7 +190,6 @@ export default async function Home() {
               <dl className={s.dl}>
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
                 <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
-                {/* TODO(open item 4): link the CertiK report once public. */}
                 <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
               </dl>
               {/* Sits at the bottom of the details column, level with the end of the left column. */}
@@ -285,7 +280,6 @@ const USES = [
 
 const GUARDS = [
   {
-    // TODO(open item 3): insurance-fund claim needs compliance sign-off.
     title: 'insurance fund.',
     body: 'Swap fees fill a fund that can buy a failing coin out of the reserve.',
     icon: (

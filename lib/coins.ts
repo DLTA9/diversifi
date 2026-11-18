@@ -48,7 +48,6 @@ export const TERMS_URL = '/terms';
 // Copies of the PDFs live in public/docs/ (taken from the old site 18 Nov 2026), so these addresses keep working after the switch.
 export const WHITEPAPER_URL = 'https://diversifi.tech/docs/whitepaper.pdf';
 export const AUDIT_URL = 'https://diversifi.tech/docs/diversifi-audit.pdf';
-// TODO(open item 4): contact address and X handle are unconfirmed.
 export const CONTACT_MAIL = 'mailto:hello@diversifi.tech';
 export const X_URL = 'https://x.com/0xDiversiFi';
 

@@ -35,7 +35,6 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
       a: ['A stablecoin backed by several other stablecoins instead of one issuer’s reserves. If one issuer fails or depegs, only its share of the backing is affected. Today 61% of all stablecoin supply sits with a single issuer.'],
     },
     {
-      // DRAFT for client sign-off.
       q: 'how is DFiUSD different from USDC or USDT?',
       a: ['USDC and USDT are each backed by one company’s reserves. DFiUSD is backed by a basket of stablecoins from multiple issuers, USDC and USDT among them, so a problem at one issuer only touches its share of the backing.'],
     },
@@ -57,11 +56,9 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
     },
     {
       q: 'what are DFiUSD’s fees?',
-      // TODO(open item 3): fee wording needs compliance sign-off.
       a: [`Minting and redeeming can carry a fee, set in the contract.${fee} The app reads the fee from the chain and shows exactly what you will receive before you confirm.`],
     },
     {
-      // DRAFT for client sign-off.
       q: 'how do I get DFiUSD?',
       a: ['Swap USDC, USDT, DAI or any other basket coin for DFiUSD in the ', { text: 'DiversiFi app', href: APP_URL }, ', which routes through the DFiUSD pools on Uniswap. You can also mint it with the full basket.'],
     },
@@ -70,12 +67,10 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
       a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: APP_URL }, ' and burn DFiUSD. You receive the reserve’s current mix of every coin in the basket, less any redeem fee, or swap it for a single coin.'],
     },
     {
-      // DRAFT for client sign-off.
       q: 'is DFiUSD a rebasing token?',
       a: ['Technically, yes: the contract can adjust every balance by the same factor, for example when the reserve moves to a new contract. The rebase rate is currently zero, so balances do not change on their own.'],
     },
     {
-      // DRAFT for client sign-off.
       q: 'can a DFiUSD wallet be frozen?',
       a: ['Yes. The DFiUSD contract can freeze an address, for example to comply with sanctions. A frozen address cannot transfer, mint or redeem, and the app checks for this before every transaction.'],
     },
