@@ -11,7 +11,7 @@ import s from './faq.module.css';
 // Fee and target split are read from the chain, so refresh like the home page.
 export const revalidate = 60;
 
-const DESC = 'Answers about DFiUSD: what backs it, what happens if a stablecoin depegs, fees, redemption, audits and risks.';
+const DESC = 'Answers about DFiUSD (Diversified USD): what backs it, how it differs from USDC, what happens if a stablecoin depegs, fees, redemption, audits and risks.';
 
 export const metadata: Metadata = {
   title: 'DFiUSD FAQ: backing, fees, redemption and risks',
@@ -54,7 +54,8 @@ export default async function Faq() {
         <div className={`wrap ${s.body}`}>
           {items.map((f, n) => (
             <section key={f.q} className={s.item} aria-labelledby={`q${n}`}>
-              <h2 id={`q${n}`} className={s.q}><span className={s.num}>{String(n + 1).padStart(2, '0')}</span>{f.q}</h2>
+              {/* The number sits outside the heading, so search engines read the question alone. */}
+              <div className={s.q}><span className={s.num} aria-hidden="true">{String(n + 1).padStart(2, '0')}</span><h2 id={`q${n}`} className={s.qText}>{f.q}</h2></div>
               <p className={s.a}>
                 {f.a.map((seg, i) => typeof seg === 'string' ? seg : (
                   <a key={i} href={seg.href} {...(seg.href.startsWith('http') ? { target: '_blank', rel: 'noopener' } : {})}>{seg.text}</a>

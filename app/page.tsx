@@ -20,12 +20,14 @@ export default async function Home() {
     '@type': 'FinancialProduct',
     '@id': `${SITE_URL}/#dfiusd`,
     name: 'DFiUSD',
-    alternateName: 'DiversiFi USD',
+    alternateName: ['Diversified USD', 'DFIUSD'],
     url: SITE_URL,
     description: SITE_DESC,
     category: 'Stablecoin',
     provider: { '@id': `${SITE_URL}/#org` },
     identifier: TOKEN_ADDR,
+    // Listings that already rank for the name, so search engines connect them to this site.
+    sameAs: [tokenUrl, 'https://www.coingecko.com/en/coins/diversified-usd', `https://app.uniswap.org/explore/tokens/ethereum/${TOKEN_ADDR.toLowerCase()}`],
     additionalProperty: [
       { '@type': 'PropertyValue', name: 'Network', value: 'Ethereum mainnet' },
       { '@type': 'PropertyValue', name: 'Token contract', value: TOKEN_ADDR },
@@ -56,8 +58,9 @@ export default async function Home() {
           <div className={`wrap ${s.heroIn}`}>
             <div className={s.heroL}>
               {/* TODO(open item 3): compliance review of eyebrow, "1:1" and "no single issuer can sink it". */}
-              <p className="label">THE PREFERRED RESERVE ASSET</p>
-              <h1 className="h1">structured stability.</h1>
+              {/* The small label is the page heading search engines read; the big slogan keeps its look as a styled line. */}
+              <h1 className="label">DFiUSD · THE DIVERSIFIED USD STABLECOIN</h1>
+              <p className="h1">structured stability.</p>
               <p className="dim pretty" style={{ maxWidth: '34em' }}>Every DFiUSD is backed 1:1 by a basket of diversified USD stablecoins, no single issuer can sink it.</p>
               <div className={s.ctaRow}>
                 <Link href="/app" className="btn btn-primary">open app</Link>

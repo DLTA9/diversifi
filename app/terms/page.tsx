@@ -13,7 +13,7 @@ const terms = content as { updated: string; intro: Block[]; sections: Section[] 
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'The terms that govern your use of the DiversiFi website, app and services.',
+  description: 'The terms that govern your use of the DiversiFi website, the DFiUSD app and related services, including eligibility, fees, risks and dispute resolution.',
   alternates: { canonical: '/terms' },
   openGraph: og('/terms', 'Terms of Service · DiversiFi', 'The terms that govern your use of the DiversiFi website, app and services.'),
 };

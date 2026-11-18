@@ -28,11 +28,16 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
   return [
     {
       q: 'what is DFiUSD?',
-      a: [`DFiUSD is a USD stablecoin on Ethereum, issued by DiversiFi. Each DFiUSD is backed 1:1 by a basket of USD stablecoins (currently ${list(COINS.map(c => c.t))}) held in the ReserveManagerV1 smart contract, so no single issuer backs the whole token.`],
+      a: [`DFiUSD (listed on exchanges and price sites as Diversified USD, DFIUSD) is a USD stablecoin on Ethereum, issued by DiversiFi. Each DFiUSD is backed 1:1 by a basket of USD stablecoins (currently ${list(COINS.map(c => c.t))}) held in the ReserveManagerV1 smart contract, so no single issuer backs the whole token.`],
     },
     {
       q: 'what is a diversified stablecoin?',
       a: ['A stablecoin backed by several other stablecoins instead of one issuer’s reserves. If one issuer fails or depegs, only its share of the backing is affected. Today 61% of all stablecoin supply sits with a single issuer.'],
+    },
+    {
+      // DRAFT for client sign-off.
+      q: 'how is DFiUSD different from USDC or USDT?',
+      a: ['USDC and USDT are each backed by one company’s reserves. DFiUSD is backed by a basket of seven stablecoins from six issuers, USDC and USDT among them, so a problem at one issuer only touches its share of the backing.'],
     },
     {
       q: 'what is DFiUSD backed by?',
@@ -56,8 +61,23 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
       a: [`Minting and redeeming can carry a fee, set in the contract.${fee} The app reads the fee from the chain and shows exactly what you will receive before you confirm.`],
     },
     {
+      // DRAFT for client sign-off.
+      q: 'how do I get DFiUSD?',
+      a: ['Swap USDC, USDT, DAI or any other basket coin for DFiUSD in the ', { text: 'DiversiFi app', href: '/app' }, ', which routes through the DFiUSD pools on Uniswap. You can also mint it with the full basket, or with a single coin the reserve is short of.'],
+    },
+    {
       q: 'how do I redeem DFiUSD?',
       a: ['Connect a wallet in the ', { text: 'DiversiFi app', href: '/app' }, ' and burn DFiUSD. You receive the reserve’s current mix of every coin in the basket, less any redeem fee, or swap it for a single coin.'],
+    },
+    {
+      // DRAFT for client sign-off.
+      q: 'is DFiUSD a rebasing token?',
+      a: ['Technically, yes: the contract can adjust every balance by the same factor, for example when the reserve moves to a new contract. The rebase rate is currently zero, so balances do not change on their own.'],
+    },
+    {
+      // DRAFT for client sign-off.
+      q: 'can a DFiUSD wallet be frozen?',
+      a: ['Yes. The DFiUSD contract can freeze an address, for example to comply with sanctions. A frozen address cannot transfer, mint or redeem, and the app checks for this before every transaction.'],
     },
     {
       q: 'what are the risks of holding DFiUSD?',

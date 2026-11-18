@@ -8,10 +8,10 @@ import { og } from '@/lib/site';
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Mint and redeem DFiUSD',
-  description: 'Swap, mint or redeem DFiUSD against its multi-stablecoin reserve, from your own wallet on Ethereum mainnet.',
+  title: 'Swap, mint and redeem DFiUSD',
+  description: 'Swap USDC, USDT, DAI and four more stablecoins for DFiUSD, or mint and redeem it against its multi-stablecoin reserve, from your own wallet on Ethereum.',
   alternates: { canonical: '/app' },
-  openGraph: og('/app', 'Mint and redeem DFiUSD · DiversiFi', 'Swap, mint or redeem DFiUSD against its multi-stablecoin reserve, from your own wallet on Ethereum mainnet.'),
+  openGraph: og('/app', 'Swap, mint and redeem DFiUSD · DiversiFi', 'Swap USDC, USDT, DAI and four more stablecoins for DFiUSD, or mint and redeem it against its multi-stablecoin reserve, from your own wallet on Ethereum.'),
 };
 
 export default async function AppPage() {
