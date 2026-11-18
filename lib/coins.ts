@@ -37,7 +37,7 @@ export const txUrl = (hash: string) => `${ETHERSCAN}/tx/${hash}`;
 
 export const DOCS_URL = 'https://docs.diversifi.tech/';
 export const TERMS_URL = '/terms';
-// The PDFs are served from diversifi.tech/docs/; keep them there (or in public/docs/) when this site takes over the domain.
+// Copies of the PDFs live in public/docs/ (taken from the old site 18 Nov 2026), so these addresses keep working after the switch.
 export const WHITEPAPER_URL = 'https://diversifi.tech/docs/whitepaper.pdf';
 export const AUDIT_URL = 'https://diversifi.tech/docs/diversifi-audit.pdf';
 // TODO(open item 4): contact address and X handle are unconfirmed.

@@ -159,7 +159,7 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
      - Alchemy key, stored as the `RPC_URL` secret in Cloudflare
      - Reown/WalletConnect project ID, locked to diversifi.tech
      - DNSSEC, CAA, auto-renew, 2FA and Cloudflare notifications
-     - PDFs into `public/docs/`
+     - PDFs into `public/docs/` (done 18 Nov 2026)
      - check the subgraph owner on The Graph Explorer
      - a small test wallet of our own
    - **Client decisions (answered 15 Nov):**
