@@ -8,7 +8,9 @@ The site only *reads* public data: the live reserve figures come from the Reserv
 
 - Next.js 16 (App Router) + TypeScript, deployed to **Cloudflare Workers** with OpenNext (`@opennextjs/cloudflare`)
 - `viem` for the read-only contract calls
-- Every dependency is pinned to an exact version
+- Every dependency is pinned to an exact version.
+  The audit of each one, the `overrides` that fix security alerts in transitive packages, and the fork decisions are in [docs/reference/dependencies.md](docs/reference/dependencies.md).
+  That file recommends forking `@opennextjs/cloudflare`, which is not done yet and is for you to decide.
 
 | Task | Command |
 |---|---|
