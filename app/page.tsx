@@ -204,7 +204,7 @@ export default async function Home() {
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
                 <div><dt>REDEEM</dt><dd>any time, for the underlying coins</dd></div>
                 <div><dt>FEES</dt><dd>{feeShort}</dd></div>
-                <div><dt>ADMIN CHANGES</dt><dd>7‑day timelock<span className="dim">·</span><a href={timelockUrl} target="_blank" rel="noopener" aria-label="DiversiFi timelock contract on Etherscan">timelock ↗</a></dd></div>
+                <div><dt>GOVERNANCE</dt><dd>7‑day timelock<span className="dim">·</span><a href={timelockUrl} target="_blank" rel="noopener" aria-label="DiversiFi governance timelock contract on Etherscan">timelock ↗</a></dd></div>
                 <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
                 {/* TODO(open item 4): link the CertiK report once public. */}
                 <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
@@ -282,7 +282,7 @@ const USES = [
   },
   {
     title: '7\u2011day timelock.',
-    body: 'Admin changes wait a week, so nothing changes overnight.',
+    body: 'Governance changes wait a week, so nothing changes overnight.',
     // seven day-ticks, the last one lit
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
