@@ -1,19 +1,21 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { isProdHost, SITE_URL } from '@/lib/site';
 
-// Content Security Policy: the browser only runs our own scripts and only talks to the Ethereum connections listed
-// here (for the live reserve figures). Anything else, e.g. an injected third-party script or a call to an unknown
-// server, is blocked. The site has no wallet connection: the app lives at app.diversifi.tech. Next.js static pages
-// need inline scripts, so 'unsafe-inline' stays for script-src; dev mode also needs 'unsafe-eval' for hot reload.
+// Content Security Policy: the browser only runs our own scripts (plus Cloudflare Web Analytics) and only talks to the
+// Ethereum connections listed here (for the live reserve figures). Anything else, e.g. an injected third-party script or
+// a call to an unknown server, is blocked. The site has no wallet connection: the app lives at app.diversifi.tech.
+// Next.js static pages need inline scripts, so 'unsafe-inline' stays for script-src; dev mode also needs 'unsafe-eval'
+// for hot reload.
 const DEV = process.env.NODE_ENV === 'development';
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ''}`,
+  // Cloudflare Web Analytics: the edge injects its beacon script, which reports visits to cloudflareinsights.com.
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${DEV ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
   [
-    "connect-src 'self'",
+    "connect-src 'self' https://cloudflareinsights.com",
     'https://ethereum-rpc.publicnode.com https://eth.drpc.org https://eth.llamarpc.com https://*.g.alchemy.com',
     DEV ? 'ws://localhost:* http://localhost:*' : '',
   ].join(' ').trim(),
