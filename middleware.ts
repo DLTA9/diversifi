@@ -8,12 +8,13 @@ import { isProdHost, SITE_URL } from '@/lib/site';
 const DEV = process.env.NODE_ENV === 'development';
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${DEV ? " 'unsafe-eval'" : ''}`,
+  // Cloudflare Web Analytics: the edge injects its beacon script, which reports visits to cloudflareinsights.com.
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${DEV ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
   [
-    "connect-src 'self'",
+    "connect-src 'self' https://cloudflareinsights.com",
     'https://ethereum-rpc.publicnode.com https://eth.drpc.org https://eth.llamarpc.com https://*.g.alchemy.com',
     DEV ? 'ws://localhost:* http://localhost:*' : '',
   ].join(' ').trim(),
