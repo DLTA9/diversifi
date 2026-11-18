@@ -178,9 +178,9 @@ export default async function Home() {
         <section id="docs" aria-label="for treasuries and protocols" className={`wrap ${s.section}`}>
           <div className="rail"><span>06 · FOR TREASURIES &amp; PROTOCOLS</span><span>RESERVE · COLLATERAL · LIQUIDITY</span></div>
           <div className={s.intGrid}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <h2 className="h2">a dollar reserve for treasuries.</h2>
-              <p className="dim pretty" style={{ maxWidth: '30em' }}>For DAOs, protocols and funds. One token, seven stablecoins, six issuers, every balance on-chain.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <h2 className="h2">the preferred dollar reserve.</h2>
+              <p className={s.intLead}><span>For DAO treasuries, protocols and funds</span> that hold dollars or accept them as collateral. DFiUSD spreads that exposure across seven stablecoins from six issuers, so a single failure only touches its own slice, and every balance can be checked on-chain, at any block.</p>
               <ul className={s.uses}>
                 {USES.map(u => (
                   <li key={u.title} className={s.use}>
@@ -202,6 +202,7 @@ export default async function Home() {
               <ContractRow name="ReserveManagerV1" meta="RESERVE" address={RM_ADDR} href={rmUrl} />
               <dl className={s.dl}>
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
+                <div><dt>BASKET</dt><dd>{COINS.length} stablecoins · {new Set(COINS.map(c => c.issuer)).size} issuers</dd></div>
                 <div><dt>REDEEM</dt><dd>any time, for the underlying coins</dd></div>
                 <div><dt>FEES</dt><dd>{feeShort}</dd></div>
                 <div><dt>GOVERNANCE</dt><dd>7‑day timelock<span className="dim">·</span><a href={timelockUrl} target="_blank" rel="noopener" aria-label="DiversiFi governance timelock contract on Etherscan">timelock ↗</a></dd></div>
@@ -260,7 +261,7 @@ const blk = (h: number, bg = 'var(--strong)', extra?: React.CSSProperties) => ({
 const USES = [
   {
     title: 'treasury reserve.',
-    body: 'Hold dollars without picking one issuer. Redeem whenever you need them.',
+    body: 'Hold idle dollars without betting on one issuer, and redeem for the underlying coins whenever you need them.',
     // the seven basket coins (their reserve-bar colours), held inside one vault
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, padding: 4, border: '1.5px solid var(--dim)', borderRadius: 4 }}>
@@ -270,7 +271,7 @@ const USES = [
   },
   {
     title: 'collateral and liquidity.',
-    body: 'An ERC-20 on mainnet, with Uniswap pools against all seven coins.',
+    body: 'A standard ERC-20 on Ethereum mainnet, already trading on Uniswap against all seven basket coins.',
     // the basket coins paired with DFiUSD, like a pool
     icon: (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -282,7 +283,7 @@ const USES = [
   },
   {
     title: '7\u2011day timelock.',
-    body: 'Governance changes wait a week, so nothing changes overnight.',
+    body: 'Every governance change waits a week before it takes effect, so there’s time to review it, or step out, before it lands.',
     // seven day-ticks, the last one lit
     icon: (
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
