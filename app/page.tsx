@@ -191,10 +191,6 @@ export default async function Home() {
                   </li>
                 ))}
               </ul>
-              <div className={s.ctaRow}>
-                <a href={`${CONTACT_MAIL}?subject=${encodeURIComponent('DFiUSD for our treasury or protocol')}`} className="btn btn-primary">talk to the team</a>
-                <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary">read the docs ↗</a>
-              </div>
             </div>
             <div className={s.ints}>
               <ContractRow token name="DFiUSD" meta="ERC-20" address={TOKEN_ADDR} href={tokenUrl} />
@@ -205,6 +201,11 @@ export default async function Home() {
                 {/* TODO(open item 4): link the CertiK report once public. */}
                 <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
               </dl>
+              {/* Sits at the bottom of the details column, level with the end of the left column. */}
+              <div className={`${s.ctaRow} ${s.intsCta}`}>
+                <a href={`${CONTACT_MAIL}?subject=${encodeURIComponent('DFiUSD for our treasury or protocol')}`} className="btn btn-primary">talk to the team</a>
+                <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary">read the docs ↗</a>
+              </div>
             </div>
           </div>
         </section>
@@ -222,9 +223,6 @@ export default async function Home() {
                   <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
                   <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
-                </nav>
-                <nav aria-label="listings" className={s.resLinks}>
-                  <span className={`label ${s.listedOn}`}>LISTED ON</span>
                   <a href={COINGECKO_URL} target="_blank" rel="noopener">coingecko ↗</a>
                   <a href={UNISWAP_URL} target="_blank" rel="noopener">uniswap ↗</a>
                 </nav>

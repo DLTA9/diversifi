@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Crops, Wordmark } from '@/components/brand';
-import { APP_URL, DOCS_URL, TERMS_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { APP_URL, COINGECKO_URL, DOCS_URL, TERMS_URL, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { og } from '@/lib/site';
 import content from './content.json';
 import s from './terms.module.css';
@@ -101,6 +101,8 @@ export default function Terms() {
               <a href={DOCS_URL} target="_blank" rel="noopener">docs ↗</a>
               <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
               <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
+              <a href={COINGECKO_URL} target="_blank" rel="noopener">coingecko ↗</a>
+              <a href={UNISWAP_URL} target="_blank" rel="noopener">uniswap ↗</a>
             </nav>
             <div className={s.sign}>
               <Wordmark size={21} mark={24} />

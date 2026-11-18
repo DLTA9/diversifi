@@ -145,6 +145,7 @@
 /* ---------- 06 integrators ---------- */
 .intGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 40px 64px; margin-top: 40px; }
 .ints { display: flex; flex-direction: column; border-top: 1px solid var(--strong); font-family: var(--mono); }
+.intsCta { margin-top: auto; padding-top: 32px; font-family: var(--sans); }
 /* contract rows: name + meta on one line, address + actions on the next */
 .ct { display: flex; flex-direction: column; gap: 6px; padding: 18px 0 14px; border-bottom: 1px solid var(--line); }
 .ctHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -195,7 +196,6 @@
 .useTitle { font-weight: 400; font-size: 17px; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 4px; }
 .sourceLink { text-decoration: none; display: inline-flex; align-items: center; min-height: 24px; }
 .sourceLink:hover { color: var(--fg); }
-.listedOn { display: inline-flex; align-items: center; min-height: 44px; }
 .intLead { max-width: 32em; font-size: 17px; line-height: 1.5; color: var(--dim); text-wrap: pretty; }
 .intLead span { color: var(--fg); }
 @media (max-width: 520px) { .use { grid-template-columns: 52px minmax(0, 1fr); gap: 12px; } .intLead { font-size: 16px; } }
