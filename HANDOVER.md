@@ -53,4 +53,4 @@ Defined in `wrangler.jsonc`:
 
 ## History
 
-`docs/INTEGRATION-PLAN.md` and `docs/CLIENT-CHECKLIST.md` are the build notes from when this repo also contained an app page at `/app`. That page and its wallet and transaction code were removed before handover. The app design now lives in `v1-interface`.
+This repo used to contain an app page at `/app`. That page and its wallet and transaction code were removed before handover. The app design now lives in `v1-interface`.
