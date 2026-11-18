@@ -44,10 +44,10 @@ export function MarketMorph() {
 
   return (
     <div className={s.morph}>
-      <div role="img" aria-label="Stablecoin market: one issuer holds 61% of supply, 151 issuers share the other 39%." className={s.morphFig}>
+      <div role="img" aria-label="Stablecoin market: one issuer holds 61% of supply, all other issuers share the other 39%. Source: DefiLlama." className={s.morphFig}>
         <div className={s.morphHead}>
           <span style={{ color: 'var(--fg)' }}>THE MARKET</span>
-          <span style={{ color: hot, transition: 'color 400ms' }}>1 ISSUER · 61% · 151 OTHERS · 39%</span>
+          <span style={{ color: hot, transition: 'color 400ms' }}>1 ISSUER · 61% · ALL OTHERS · 39%</span>
         </div>
         <div className={s.morphBar}>
           {MARKET.map((v, i) => (

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Crops, DfiChip, Mark, MiniBar, Ruler, Wordmark } from '@/components/brand';
 import { IssuerExplainer, MarketMorph, MintDots, ReservePanel, ReserveSection, Signup, ContractRow } from '@/components/home';
 import { ReserveProvider } from '@/components/ReserveProvider';
-import { AUDIT_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, TOKEN_ADDR, tokenUrl, WHITEPAPER_URL, X_URL } from '@/lib/coins';
+import { AUDIT_URL, COINGECKO_URL, COINS, CONTACT_MAIL, DEPLOY_TX, DOCS_URL, ETHERSCAN, RM_ADDR, rmUrl, TERMS_URL, timelockUrl, TOKEN_ADDR, tokenUrl, UNISWAP_URL, WHITEPAPER_URL, X_URL } from '@/lib/coins';
 import { SITE_DESC, SITE_URL } from '@/lib/site';
 import { FALLBACK_READING, readReserve } from '@/lib/reserve';
 import s from './home.module.css';
@@ -14,6 +14,11 @@ export default async function Home() {
   let initial = FALLBACK_READING;
   let ok = true;
   try { initial = await readReserve(); } catch { ok = false; }
+
+  // Fees as the contract reports them right now; left out if the chain read failed, so the page never states a stale fee.
+  const pctFee = (f: number) => `${+(f * 100).toFixed(2)}%`;
+  const feeLine = !ok ? '' : initial.mintFee === 0 && initial.burnFee === 0 ? 'NO MINT OR REDEEM FEE TODAY' : `MINT FEE ${pctFee(initial.mintFee)} · REDEEM FEE ${pctFee(initial.burnFee)}`;
+  const feeShort = !ok ? 'read from the contract' : `${pctFee(initial.mintFee)} mint · ${pctFee(initial.burnFee)} redeem`;
 
   const productLd = {
     '@context': 'https://schema.org',
@@ -63,9 +68,10 @@ export default async function Home() {
               <p className="h1">structured stability.</p>
               <p className="dim pretty" style={{ maxWidth: '34em' }}>Every DFiUSD is backed 1:1 by a basket of diversified USD stablecoins, no single issuer can sink it.</p>
               <div className={s.ctaRow}>
-                <Link href="/app" className="btn btn-primary">open app</Link>
+                <Link href="/app" className="btn btn-primary">get DFiUSD</Link>
                 <a href="#reserve" className="btn btn-secondary">check reserves</a>
               </div>
+              <p className={s.source}>REDEEM FOR THE UNDERLYING COINS ANY TIME{feeLine && <> · {feeLine}</>}</p>
               <div className={s.conc}>
                 <div className={s.concStat}>
                   <span className={s.big}>61%</span>
@@ -73,7 +79,7 @@ export default async function Home() {
                 </div>
                 <MarketMorph />
                 {/* TODO(open item 4): name the source for these figures if it should be shown. */}
-                <span className={s.source}>Q3 2026 · 195 STABLECOINS · 152 ISSUERS</span>
+                <a href="https://defillama.com/stablecoins" target="_blank" rel="noopener" className={`${s.source} ${s.sourceLink}`}>SOURCE: DEFILLAMA · NOV 2026 ↗</a>
               </div>
             </div>
             <ReservePanel />
@@ -168,17 +174,27 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 06 FOR INTEGRATORS */}
-        <section id="docs" aria-label="for integrators" className={`wrap ${s.section}`}>
-          <div className="rail"><span>06 · FOR INTEGRATORS</span><span>CONTRACTS · ADDRESSES · DOCS</span></div>
+        {/* 06 FOR TREASURIES & PROTOCOLS: the buyer DFiUSD fits best. Every claim here is checkable on-chain. */}
+        <section id="docs" aria-label="for treasuries and protocols" className={`wrap ${s.section}`}>
+          <div className="rail"><span>06 · FOR TREASURIES &amp; PROTOCOLS</span><span>RESERVE · COLLATERAL · LIQUIDITY</span></div>
           <div className={s.intGrid}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <h2 className="h2">reserves on-chain, verifiable anytime.</h2>
-              {/* TODO(open item 2): disclose rebasing and maintainer freezing; "plain ERC-20" needs rewording. */}
-              <p className="dim pretty" style={{ maxWidth: '32em' }}>DFiUSD is an ERC-20 collateral asset that spreads issuer risk. The token and ReserveManagerV1 are audited and source-verified on Etherscan.</p>
+              <h2 className="h2">a dollar reserve that doesn&apos;t bet on one issuer.</h2>
+              <p className="dim pretty" style={{ maxWidth: '32em' }}>For DAO treasuries, protocols and funds that hold dollars or accept them as collateral. One token spreads the exposure across seven stablecoins from six issuers, and every balance can be checked on-chain.</p>
+              <ol className={s.uses}>
+                {USES.map((u, i) => (
+                  <li key={u.title} className={s.use}>
+                    <span className={s.stepNum}>{String(i + 1).padStart(2, '0')}</span>
+                    <div>
+                      <h3 className={s.guardTitle}>{u.title}</h3>
+                      <p className={s.stepBody}>{u.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
               <div className={s.ctaRow}>
+                <a href={`${CONTACT_MAIL}?subject=${encodeURIComponent('DFiUSD for our treasury or protocol')}`} className="btn btn-primary">talk to the team</a>
                 <a href={DOCS_URL} target="_blank" rel="noopener" className="btn btn-secondary">read the docs ↗</a>
-                <a href={CONTACT_MAIL} className="btn btn-secondary">let&apos;s meet</a>
               </div>
             </div>
             <div className={s.ints}>
@@ -186,6 +202,9 @@ export default async function Home() {
               <ContractRow name="ReserveManagerV1" meta="RESERVE" address={RM_ADDR} href={rmUrl} />
               <dl className={s.dl}>
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
+                <div><dt>REDEEM</dt><dd>any time, for the underlying coins</dd></div>
+                <div><dt>FEES</dt><dd>{feeShort}</dd></div>
+                <div><dt>ADMIN CHANGES</dt><dd>7‑day timelock<span className="dim">·</span><a href={timelockUrl} target="_blank" rel="noopener" aria-label="DiversiFi timelock contract on Etherscan">timelock ↗</a></dd></div>
                 <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
                 {/* TODO(open item 4): link the CertiK report once public. */}
                 <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
@@ -208,6 +227,11 @@ export default async function Home() {
                   <a href={WHITEPAPER_URL} target="_blank" rel="noopener">whitepaper ↗</a>
                   <a href={X_URL} target="_blank" rel="noopener">X ↗</a>
                 </nav>
+                <nav aria-label="listings" className={s.resLinks}>
+                  <span className={`label ${s.listedOn}`}>LISTED ON</span>
+                  <a href={COINGECKO_URL} target="_blank" rel="noopener">coingecko ↗</a>
+                  <a href={UNISWAP_URL} target="_blank" rel="noopener">uniswap ↗</a>
+                </nav>
                 <footer className={s.sign}>
                   <Wordmark size={21} mark={24} />
                   <span className="mono dim" style={{ fontSize: 13 }}>© 2026 DiversiFi</span>
@@ -226,6 +250,13 @@ export default async function Home() {
     </ReserveProvider>
   );
 }
+
+/* ---------- section 06 use cases: facts a treasury can verify itself ---------- */
+const USES = [
+  { title: 'treasury reserve.', body: 'Hold idle dollars in one balance instead of with one issuer. Redeem for the underlying coins whenever you need them.' },
+  { title: 'collateral and liquidity.', body: 'An ERC-20 on Ethereum mainnet, with DFiUSD pools on Uniswap against all seven basket coins.' },
+  { title: 'a risk review you can run yourself.', body: 'Targets, holdings and rules are readable on Etherscan, and admin changes wait out a 7‑day timelock, so nothing changes overnight.' },
+];
 
 /* ---------- section 05 safeguard glyphs (div-built, aria-hidden) ---------- */
 const EVEN7 = [1, 1, 1, 1, 1, 1, 1];

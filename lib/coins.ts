@@ -32,6 +32,12 @@ export const HELPERS_ADDR = '0x3E706f1D975BF76e259939Bd741C36A88A6F0D13' as cons
 export const ETHERSCAN = 'https://etherscan.io';
 export const rmUrl = `${ETHERSCAN}/address/${RM_ADDR}`;
 export const tokenUrl = `${ETHERSCAN}/token/${TOKEN_ADDR}`;
+// Owns DFiUSD and holds the reserve's admin role; every admin change waits 7 days (getMinDelay = 604800, checked 18 Nov 2026).
+export const TIMELOCK_ADDR = '0x00890D5630f8e46aCFabDE50cD260acc5c605D33' as const;
+export const timelockUrl = `${ETHERSCAN}/address/${TIMELOCK_ADDR}`;
+// Third-party listings, shown as "listed on" in the footer.
+export const COINGECKO_URL = 'https://www.coingecko.com/en/coins/diversified-usd';
+export const UNISWAP_URL = `https://app.uniswap.org/explore/tokens/ethereum/${TOKEN_ADDR.toLowerCase()}`;
 export const coinUrl = (c: Coin) => `${ETHERSCAN}/token/${c.address}?a=${RM_ADDR}`;
 export const txUrl = (hash: string) => `${ETHERSCAN}/tx/${hash}`;
 
