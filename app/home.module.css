@@ -190,7 +190,7 @@
 
 /* section 06 use cases and footer listings */
 .uses { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.use { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.use { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .useIcon { height: 40px; display: flex; align-items: center; }
 .useTitle { font-weight: 400; font-size: 17px; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 4px; }
 .sourceLink { text-decoration: none; display: inline-flex; align-items: center; min-height: 24px; }
@@ -199,3 +199,5 @@
 .intLead { max-width: 32em; font-size: 17px; line-height: 1.5; color: var(--dim); text-wrap: pretty; }
 .intLead span { color: var(--fg); }
 @media (max-width: 520px) { .use { grid-template-columns: 52px minmax(0, 1fr); gap: 12px; } .intLead { font-size: 16px; } }
+.useLink { color: var(--signal); text-decoration: none; white-space: nowrap; }
+.useLink:hover { text-decoration: underline; text-underline-offset: 3px; }

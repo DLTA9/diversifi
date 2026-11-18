@@ -187,7 +187,7 @@ export default async function Home() {
                     <div aria-hidden="true" className={s.useIcon}>{u.icon}</div>
                     <div>
                       <h3 className={s.useTitle}>{u.title}</h3>
-                      <p className={s.stepBody}>{u.body}</p>
+                      <p className={s.stepBody}>{u.body}{'link' in u && u.link && <> <a href={u.link.href} className={s.useLink}>{u.link.text}</a></>}</p>
                     </div>
                   </li>
                 ))}
@@ -282,13 +282,13 @@ const USES = [
     ),
   },
   {
-    title: '7\u2011day timelock.',
-    body: 'Governance changes wait a week, so nothing changes overnight.',
-    // seven day-ticks, the last one lit
+    title: 'built-in safeguards.',
+    body: 'A failing coin stays in its slice, growth is capped, and a frozen coin can’t trap the rest.',
+    link: { text: 'see how it works ↑', href: '#issuer-fails' },
+    // the basket with one coin failed and fenced off, the rest untouched
     icon: (
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-        {[0, 1, 2, 3, 4, 5, 6].map(i => <i key={i} style={{ display: 'block', width: 3, height: i === 6 ? 28 : 14, borderRadius: 1, background: i === 6 ? 'var(--signal)' : 'var(--dim)' }} />)}
-        <span className="mono" style={{ fontSize: 11, lineHeight: 1, marginLeft: 4, color: 'var(--signal)' }}>7D</span>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+        {[0, 1, 2, 3, 4, 5, 6].map(i => <i key={i} className={s.blk} style={i === 3 ? blk(20, 'transparent', { width: 5, border: '1.5px dashed var(--crit)' }) : blk(20, 'var(--fg)', { width: 5 })} />)}
       </div>
     ),
   },
