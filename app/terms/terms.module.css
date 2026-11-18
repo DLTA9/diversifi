@@ -1,7 +1,7 @@
 /* ---------- nav (same as home) ---------- */
 .nav { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
 .navIn { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.logo { text-decoration: none; color: var(--fg); }
+.logo { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--fg); }
 .logo:hover { color: var(--fg); }
 
 /* ---------- header ---------- */
@@ -41,7 +41,7 @@
 .links a:hover { color: var(--signal); }
 .sign { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; }
 .legal { display: flex; flex-wrap: wrap; gap: 0 20px; font-family: var(--mono); font-size: 13px; }
-.legal a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; color: var(--dim); text-decoration: none; }
+.legal a { display: inline-flex; align-items: center; min-height: 44px; min-width: 24px; color: var(--dim); text-decoration: none; }
 .legal a:hover { color: var(--fg); }
 
 @media (max-width: 860px) {

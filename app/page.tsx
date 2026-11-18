@@ -15,9 +15,6 @@ export default async function Home() {
   let ok = true;
   try { initial = await readReserve(); } catch { ok = false; }
 
-  // Fees as the contract reports them right now; left out if the chain read failed, so the page never states a stale fee.
-  const pctFee = (f: number) => `${+(f * 100).toFixed(2)}%`;
-  const feeLine = !ok ? '' : initial.mintFee === 0 && initial.burnFee === 0 ? 'NO MINT OR REDEEM FEE TODAY' : `MINT FEE ${pctFee(initial.mintFee)} · REDEEM FEE ${pctFee(initial.burnFee)}`;
 
   const productLd = {
     '@context': 'https://schema.org',
@@ -70,7 +67,6 @@ export default async function Home() {
                 <a href={APP_URL} className="btn btn-primary">get DFiUSD</a>
                 <a href="#reserve" className="btn btn-secondary">check reserves</a>
               </div>
-              <p className={s.source}>REDEEM FOR THE UNDERLYING COINS ANY TIME{feeLine && <> · {feeLine}</>}</p>
               <div className={s.conc}>
                 <div className={s.concStat}>
                   <span className={s.big}>61%</span>
@@ -111,7 +107,7 @@ export default async function Home() {
                 <div className={s.diaRow}>
                   <DfiChip />
                   <span className="mono dim">→</span>
-                  <div className={s.diaCol}><MiniBar /><span className="label-sm" style={{ letterSpacing: '.02em', whiteSpace: 'nowrap' }}>BACKED BY THE WHOLE BASKET</span></div>
+                  <div className={s.diaCol}><MiniBar /><span className="label-sm" style={{ letterSpacing: '.02em' }}>BACKED BY THE WHOLE BASKET</span></div>
                 </div>
               </div>
               {/* TODO(open item 2): "plain ERC-20" is inaccurate (rebasing, freezable). Reword with compliance. */}
@@ -264,7 +260,7 @@ const USES = [
   },
   {
     title: 'collateral and liquidity.',
-    body: 'An ERC-20 on mainnet, with Uniswap pools against all seven coins.',
+    body: 'An ERC-20 on mainnet, with Uniswap pools against every basket coin.',
     // the basket coins paired with DFiUSD, like a pool
     icon: (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

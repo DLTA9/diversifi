@@ -37,7 +37,7 @@ export function faqs(r: ReserveReading, live: boolean): Faq[] {
     {
       // DRAFT for client sign-off.
       q: 'how is DFiUSD different from USDC or USDT?',
-      a: ['USDC and USDT are each backed by one company’s reserves. DFiUSD is backed by a basket of seven stablecoins from six issuers, USDC and USDT among them, so a problem at one issuer only touches its share of the backing.'],
+      a: ['USDC and USDT are each backed by one company’s reserves. DFiUSD is backed by a basket of stablecoins from multiple issuers, USDC and USDT among them, so a problem at one issuer only touches its share of the backing.'],
     },
     {
       q: 'what is DFiUSD backed by?',
