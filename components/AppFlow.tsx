@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseEventLogs, zeroAddress, type Address, type ContractFunctionParameters, type Hash } from 'viem';
 import { useConnect, useConnection, useConnectors, useDisconnect, usePublicClient, useReadContract, useReadContracts, useSignTypedData, useSwitchChain, useWriteContract } from 'wagmi';
-import { erc20Abi, helpersAbi, indexTokenAbi, permit2Abi, reserveManagerAbi, routerAbi, stateViewAbi, v4QuoterAbi } from '@/lib/abi';
-import { buildSwap, DEADLINE_S, MAX_IMPACT, MIN_RATE, minOut, PERMIT2, PERMIT_TTL_S, permitTypedData, SLIPPAGE_BPS, UNIVERSAL_ROUTER, WARN_IMPACT } from '@/lib/swap';
+import { erc20Abi, helpersAbi, indexTokenAbi, permit2Abi, reserveManagerAbi, stateViewAbi, v4QuoterAbi } from '@/lib/abi';
+import { DEADLINE_S, MAX_IMPACT, MIN_RATE, minOut, PERMIT2, SLIPPAGE_BPS, UNIVERSAL_ROUTER, WARN_IMPACT } from '@/lib/swap';
+import { sendBurn, sendMint, sendRebalance, sendSwap, type Wallet } from '@/lib/flows';
 import { CHAIN_ID, evaluateGuard, TRUSTED, type GuardInput } from '@/lib/guard';
 import { COINS, ETHERSCAN, FOOTNOTE, HELPERS_ADDR, RM_ADDR, TOKEN_ADDR, txUrl } from '@/lib/coins';
 import { maxMint, parseAmount, toNum, type TargetParam } from '@/lib/flow';
-import { quoteRebalance, room, type RebState } from '@/lib/rebalance';
+import { gapOf, quoteRebalance, room, type RebState } from '@/lib/rebalance';
 import { dfiPrice, poolId, poolKey, V4, zeroForOne } from '@/lib/uniswap';
 import { f2, hhmm, type ReserveReading } from '@/lib/reserve';
 import { CHAIN_NAMES, PREVIEW_ADDR, WALLETS } from '@/lib/wagmi';
@@ -39,8 +40,6 @@ const down2 = (n: number) => Math.floor(n * 100) / 100;
 const E18 = 10n ** 18n;
 const RM = { address: RM_ADDR, abi: reserveManagerAbi } as const;
 
-// Coins with a DFiUSD pool on Uniswap V4 (all seven, checked with the V4 quoter on 15 Nov 2026).
-const POOLED = new Set(['USDC', 'DAI', 'USDS', 'USDT', 'GHO', 'FDUSD', 'frxUSD']);
 // Dev only: /app?drift=1 skews the reading so the rebalancing screens can be checked while the real reserve sits on target.
 // Read after mount (see useDrift) so the server and first client render match.
 const wantsDrift = () => process.env.NODE_ENV === 'development' && new URLSearchParams(window.location.search).has('drift');
@@ -69,21 +68,16 @@ function toRebState(pd: readonly unknown[] | undefined, drift: boolean): RebStat
 /** Thrown before anything is sent, with a message for the person. */
 const stopWith = (userMessage: string) => Object.assign(new Error(userMessage), { userMessage });
 
-/** Per-coin gap to target in dollars. Positive: the reserve is short and accepts a deposit up to `room`.
- *  Negative: it holds too much and allows a withdrawal up to `room`. Mirrors ReserveMath.calcMaxIndividualDelta. */
-function gaps(r: ReserveReading) {
-  return r.coins.map(c => {
-    const t = c.target / 100;
-    const diff = t * r.total - c.held;
-    return { diff, room: Math.abs(diff) / (1 - t) };
-  });
-}
-
 /** The wallet can't cover the network fee (it must hold the maximum fee up front, not just what is charged). */
 function isOutOfGas(e: unknown) {
   for (let c = e as { name?: string; message?: string; cause?: unknown } | undefined; c; c = c.cause as typeof c) {
     if (c.name === 'InsufficientFundsError' || /insufficient funds/i.test(c.message ?? '')) return true;
   }
+  return false;
+}
+
+function isRevert(e: unknown) {
+  for (let c = e as { name?: string; cause?: unknown } | undefined; c; c = c.cause as typeof c) if (c.name === 'ContractFunctionRevertedError') return true;
   return false;
 }
 
@@ -228,7 +222,7 @@ export function AppFlow() {
     const v = <T,>(i: number): T | null | undefined => (!gr ? undefined : gr[i]?.status === 'success' ? (gr[i].result as T) : null);
     return {
       indexToken: v(0), emigrating: v(1), tokenReserveManager: v(2), migrating: v(3),
-      frozen: address ? v<boolean>(4) ?? false : false,
+      frozen: address ? v<boolean>(4) : false,
       targetAssets: params.data ? (params.data[0] as readonly TargetParam[]) : params.isError ? null : undefined,
       currentAssets: params.data ? (params.data[6] as readonly TargetParam[]) : params.isError ? null : undefined,
       paused: p?.paused, pauseMessage: p?.message,
@@ -270,15 +264,14 @@ export function AppFlow() {
   const sIdx = swapIdx ?? richest;
   const sCoin = COINS[sIdx];
   const swapPayBal = side === 'buy' ? usdBal(sIdx) : dfiNum;
-  const swapPooled = POOLED.has(sCoin.t);
   const sKey = useMemo(() => poolKey(sCoin.address), [sCoin.address]);
   const swapIn = dRaw && dRaw > 0n ? (side === 'buy' ? dRaw / 10n ** BigInt(18 - sCoin.decimals) : dRaw) : 0n;
   const swapQ = useReadContract({
     address: V4.quoter, abi: v4QuoterAbi, functionName: 'quoteExactInputSingle', chainId: 1,
     args: [{ poolKey: sKey, zeroForOne: zeroForOne(sKey, side === 'buy' ? sCoin.address : TOKEN_ADDR), exactAmount: swapIn, hookData: '0x' }],
-    query: { enabled: mounted && tab === 'swap' && swapPooled && swapIn > 0n, refetchInterval: 15_000, retry: false },
+    query: { enabled: mounted && tab === 'swap' && swapIn > 0n, refetchInterval: 15_000, retry: false },
   });
-  const slot = useReadContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(sKey)], chainId: 1, query: { enabled: mounted && swapPooled, refetchInterval: 30_000 } });
+  const slot = useReadContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(sKey)], chainId: 1, query: { enabled: mounted, refetchInterval: 30_000 } });
   // DFiUSD's market price, from the deepest pool (USDC).
   const usdcKey = useMemo(() => poolKey(COINS[0].address), []);
   const pegSlot = useReadContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(usdcKey)], chainId: 1, query: { enabled: mounted, refetchInterval: 60_000 } });
@@ -288,7 +281,9 @@ export function AppFlow() {
   const atMid = mid ? (side === 'buy' ? amt / mid : amt * mid) : null;
   const impact = swapOut !== null && atMid ? Math.max(0, 1 - swapOut / atMid) : null;
   let swapErr = '';
-  if (tab === 'swap' && swapIn > 0n && settled && swapQ.isError) swapErr = 'the pool can’t fill this amount. try a smaller one.';
+  // The quoter reverts when the pool can't fill the amount; any other error is the network.
+  if (tab === 'swap' && swapIn > 0n && settled && swapQ.isError)
+    swapErr = isRevert(swapQ.error) ? 'the pool can’t fill this amount. try a smaller one.' : 'couldn’t get a price right now. try again in a moment.';
   else if (tab === 'swap' && raw && ready && amt > swapPayBal) swapErr = 'amount is above your balance.';
   const tokenIn = side === 'buy' ? sCoin.address : TOKEN_ADDR;
   const tokenOut = side === 'buy' ? TOKEN_ADDR : sCoin.address;
@@ -311,18 +306,21 @@ export function AppFlow() {
   const swapUnits = raw && raw > 0n ? (side === 'buy' ? raw / 10n ** BigInt(18 - sCoin.decimals) : raw) : 0n;
   const needErc20 = !swapAllow.data || swapAllow.data[0] < swapUnits;
   const needPermit = !swapAllow.data || swapAllow.data[1][0] < swapUnits || swapAllow.data[1][1] * 1000 < Date.now() + DEADLINE_S * 1000;
-  const swapValid = tab === 'swap' && swapPooled && !!raw && raw > 0n && !swapErr && ready && swapOut !== null && swapMin !== null && settled;
+  const swapValid = tab === 'swap' && !!raw && raw > 0n && !swapErr && ready && swapOut !== null && swapMin !== null && settled;
   const rateText = swapOut !== null && amt > 0
     ? side === 'buy' ? `1 ${sCoin.t} = ${(swapOut / amt).toFixed(4)} DFiUSD` : `1 DFiUSD = ${(swapOut / amt).toFixed(4)} ${sCoin.t}`
     : mid ? (side === 'buy' ? `1 ${sCoin.t} ≈ ${(1 / mid).toFixed(4)} DFiUSD` : `1 DFiUSD ≈ ${mid.toFixed(4)} ${sCoin.t}`) : '—';
 
   /* ---------- mint & redeem: rebalance with one coin (exact contract maths, lib/rebalance.ts) ---------- */
   const roomNum = COINS.map(c => (rebState ? toNum(room(rebState, c.address, dir), c.decimals) : 0));
+  // Per-coin dollars short (+) or over (−) target, with the contract's exact maths; null until read.
+  const gapNum = rebState ? COINS.map(c => { const a = rebState.assets.find(x => x.address.toLowerCase() === c.address.toLowerCase()); return a ? toNum(gapOf(a, rebState.total), 18) : 0; }) : null;
   // Coins the reserve accepts right now: short of target for a mint, over target for a redeem. Ignore dust under a cent.
   const open = roomNum.map(r => r > 0.01);
   const anyOpen = open.some(Boolean);
   const firstOpen = open.findIndex(Boolean);
-  const rIdx = rebIdx !== null && open[rebIdx] ? rebIdx : firstOpen >= 0 ? firstOpen : 0;
+  // Once picked (or locked in at review) the coin never changes by itself; if it closes, the form says so instead.
+  const rIdx = rebIdx ?? (firstOpen >= 0 ? firstOpen : 0);
   const rCoin = COINS[rIdx];
   const rRoom = open[rIdx] ? down2(roomNum[rIdx]) : 0;
   function rebalancing() { return tab === 'contribute' && method === 'rebalance'; }
@@ -409,122 +407,83 @@ export function AppFlow() {
     const fresh = evaluateGuard(guardInput(g.data, p));
     return fresh.state === 'ok' ? '' : fresh.reason;
   };
+  // A transaction that was sent but whose result we lost (the page or network dropped). Blocks a resend.
+  const [lost, setLost] = useState<Hash | null>(null);
   const confirm = async () => {
-    if (!canReview || !raw || !client) return;
+    if (!canReview || !raw || !client || !address || lost) return;
     setPending(true); setRejected(false); setFailed('');
     const stop = await preflight();
     if (stop) { setFailed(stop); setPending(false); showToast({ color: 'var(--crit)', text: 'stopped before signing: safety check failed.', word: 'STOPPED' }, 6000); return; }
-    const waitTx = async (hash: Hash) => { await client.waitForTransactionReceipt({ hash }); return hash; };
-    // Exact approval of one coin to the reserve, only if the current (freshly read) allowance is too small.
-    // USDT reverts on changing a non-zero allowance, so it is reset to zero first.
-    const approveIfNeeded = async (i: number, units: bigint, label: string) => {
-      const c = COINS[i];
-      const current = await client.readContract({ address: c.address, abi: erc20Abi, functionName: 'allowance', args: [address!, RM_ADDR] });
-      if (current >= units) return;
-      showToast({ color: 'var(--warn)', text: label, word: 'WAITING' });
-      if (c.t === 'USDT' && current > 0n) await waitTx(await writeContractAsync({ address: c.address, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, 0n], chainId: 1 }));
-      await waitTx(await writeContractAsync({ address: c.address, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, units], chainId: 1 }));
+    let n = 0;
+    const w: Wallet = {
+      client, account: address,
+      write: call => writeContractAsync({ ...call, chainId: 1 } as never),
+      sign: td => signTypedDataAsync(td),
+      step: (what, token) => {
+        const t = COINS.find(c => token && c.address.toLowerCase() === token.toLowerCase())?.t ?? 'DFiUSD';
+        const text = what === 'approve' ? `approve ${t}` : what === 'sign' ? 'sign the permission' : what === 'allow' ? 'allow the swap' : 'confirm';
+        showToast({ color: 'var(--warn)', text: `${text} in your wallet · request ${++n}`, word: 'WAITING' });
+      },
     };
-    const simulate = (call: Parameters<typeof client.simulateContract>[0]) => client.simulateContract({ ...call, account: address! } as never);
+    let sent: Hash | null = null;
+    let reverted = false;
     try {
-      let hash: Hash;
       let received = '';
       if (tab === 'swap') {
-        const units = swapUnits;
-        const key = sKey;
-        // 1. A fresh quote and fresh price right now; the same limits as the form are checked again.
+        // A fresh quote and fresh price right now; the same limits as the form are checked again.
         const [[q], s0, block] = await Promise.all([
-          client.readContract({ address: V4.quoter, abi: v4QuoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne: zeroForOne(key, tokenIn), exactAmount: units, hookData: '0x' }] }),
-          client.readContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(key)] }),
+          client.readContract({ address: V4.quoter, abi: v4QuoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: sKey, zeroForOne: zeroForOne(sKey, tokenIn), exactAmount: swapUnits, hookData: '0x' }] }),
+          client.readContract({ address: V4.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [poolId(sKey)] }),
           client.getBlock(),
         ]);
         const outNum = toNum(q, side === 'buy' ? 18 : sCoin.decimals);
-        const m = dfiPrice(key, s0[0], sCoin.decimals);
+        const m = dfiPrice(sKey, s0[0], sCoin.decimals);
         const imp = 1 - outNum / (side === 'buy' ? amt / m : amt * m);
         if (outNum / amt < MIN_RATE || imp > MAX_IMPACT) throw stopWith('the price moved past the safety limits. nothing was sent.');
         if (outNum < (swapOut ?? 0) * (1 - Number(SLIPPAGE_BPS) / 10_000)) throw stopWith('the price moved since your review. go back to see the new quote.');
-        const minAmountOut = minOut(q);
-        const now = Number(block.timestamp);
-        const steps = (needErc20 ? 1 : 0) + (needPermit ? 1 : 0) + 1;
-        let n = 0;
-        // 2. Exact approval of the coin to Permit2 (USDT needs a reset to zero first).
-        const a = await client.readContract({ address: tokenIn, abi: erc20Abi, functionName: 'allowance', args: [address!, PERMIT2] });
-        if (a < units) {
-          showToast({ color: 'var(--warn)', text: `approve ${inT} in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
-          if (sCoin.t === 'USDT' && side === 'buy' && a > 0n) await waitTx(await writeContractAsync({ address: tokenIn, abi: erc20Abi, functionName: 'approve', args: [PERMIT2, 0n], chainId: 1 }));
-          await waitTx(await writeContractAsync({ address: tokenIn, abi: erc20Abi, functionName: 'approve', args: [PERMIT2, units], chainId: 1 }));
-        }
-        // 3. Permission for the router: a signature for exactly this amount, 30 minutes. Smart-account wallets
-        //    (code at the address) approve on-chain instead, since their signatures are checked differently.
-        const [p2amt, p2exp, nonce] = await client.readContract({ address: PERMIT2, abi: permit2Abi, functionName: 'allowance', args: [address!, tokenIn, UNIVERSAL_ROUTER] });
-        let permit: Parameters<typeof buildSwap>[0]['permit'];
-        if (p2amt < units || p2exp <= now + DEADLINE_S) {
-          const smart = ((await client.getCode({ address: address! })) ?? '0x').length > 2;
-          if (smart) {
-            showToast({ color: 'var(--warn)', text: `allow the swap in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
-            await waitTx(await writeContractAsync({ address: PERMIT2, abi: permit2Abi, functionName: 'approve', args: [tokenIn, UNIVERSAL_ROUTER, units, now + PERMIT_TTL_S], chainId: 1 }));
-          } else {
-            showToast({ color: 'var(--warn)', text: `sign the permission in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
-            const td = permitTypedData(tokenIn, units, Number(nonce), now);
-            permit = { message: td.message, signature: await signTypedDataAsync(td) };
-          }
-        }
-        // 4. Build, simulate (stops here if anything would fail), then send.
-        const args = buildSwap({ key, tokenIn, tokenOut, amountIn: units, minAmountOut, now, permit });
-        await client.simulateContract({ address: UNIVERSAL_ROUTER, abi: routerAbi, functionName: 'execute', args, account: address! });
-        showToast({ color: 'var(--warn)', text: `confirm the swap in your wallet · ${++n} of ${steps}`, word: 'WAITING' });
-        hash = await writeContractAsync({ address: UNIVERSAL_ROUTER, abi: routerAbi, functionName: 'execute', args, chainId: 1 });
+        sent = await sendSwap(w, { key: sKey, tokenIn, tokenOut, amountIn: swapUnits, minAmountOut: minOut(q), now: Number(block.timestamp) });
       } else if (rebalancing()) {
         // Fresh reserve state, same exact maths as the form; stop if the limit or the reward changed.
         const fresh = toRebState((await params.refetch()).data as readonly unknown[] | undefined, drift);
         const fq = fresh ? quoteRebalance(fresh, rCoin.address, dir, rebUnits) : null;
         if (!fq?.ok) throw stopWith('the reserve changed since your review and can’t take this amount now. go back to see the new limit.');
         if (rq?.ok && fq.reward < rq.reward) throw stopWith('the reward changed since your review. go back to see the new numbers.');
-        if (dir === 'mint') await approveIfNeeded(rIdx, fq.coinUnits, `approve ${rCoin.t} in your wallet · 1 of 2`);
-        const call = { ...RM, functionName: 'swapTowardsTarget', args: [rCoin.address, dir === 'mint' ? fq.coinUnits : -fq.coinUnits] } as const;
-        await simulate(call);
-        showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...call, chainId: 1 });
+        sent = await sendRebalance(w, rCoin.address, dir === 'mint' ? fq.coinUnits : -fq.coinUnits);
       } else if (isMint) {
         // Fresh exact quote; it may not ask for more of any coin than the review showed.
-        const [list] = await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteMint', args: [raw] });
-        const fresh = COINS.map(c => list.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n);
-        if (fresh.some((amount, i) => amount > (deposits[i]?.amount ?? 0n))) throw stopWith('the amounts changed since your review. go back to see the new quote.');
-        const need = fresh.map((amount, i) => ({ amount, i })).filter(x => x.amount > 0n);
-        for (let k = 0; k < need.length; k++) await approveIfNeeded(need[k].i, need[k].amount, `approve ${COINS[need[k].i].t} in your wallet · ${k + 1} of ${need.length}`);
-        const call = { ...RM, functionName: 'mint', args: [raw, '0x'] } as const;
-        await simulate(call);
-        showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...call, chainId: 1 });
+        const fresh = byAddr((await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteMint', args: [raw] }))[0]);
+        if (fresh.some((x, i) => x.amount > (deposits[i]?.amount ?? 0n))) throw stopWith('the amounts changed since your review. go back to see the new quote.');
+        sent = await sendMint(w, raw, fresh.map(x => ({ token: x.coin.address, amount: x.amount })));
       } else {
         // Fresh exact quote; stop if the basket would now pay noticeably less than the review showed.
-        const [list] = await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteBurn', args: [raw] });
-        const freshNet = COINS.reduce((t, c) => t + toNum(list.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n, c.decimals), 0);
-        if (freshNet < redeem.net - 0.01) throw stopWith('the payout changed since your review. go back to see the new quote.');
-        const call = { ...RM, functionName: 'burn', args: [raw, false, '0x'] } as const;
-        await simulate(call);
-        showToast({ color: 'var(--warn)', text: 'confirm in your wallet.', word: 'WAITING' });
-        hash = await writeContractAsync({ ...call, chainId: 1 });
+        const fresh = byAddr((await client.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteBurn', args: [raw] }))[0]);
+        if (fresh.reduce((t, x) => t + toNum(x.amount, x.decimals), 0) < redeem.net - 0.01) throw stopWith('the payout changed since your review. go back to see the new quote.');
+        sent = await sendBurn(w, raw);
       }
       showToast({ color: 'var(--warn)', text: 'waiting for the block.', word: 'PENDING' });
-      const r = await client.waitForTransactionReceipt({ hash });
-      if (r.status !== 'success') throw new Error('reverted');
+      // No time limit: a slow block must never look like a failure, or people send again and pay twice.
+      const r = await client.waitForTransactionReceipt({ hash: sent, timeout: 0 });
+      if (r.status !== 'success') { reverted = true; throw new Error('reverted'); }
       // What actually arrived, read from the receipt: every Transfer of a known token to this wallet.
       const arrived = parseEventLogs({ abi: erc20Abi, logs: r.logs, eventName: 'Transfer' })
-        .filter(l => l.args.to.toLowerCase() === address!.toLowerCase());
+        .filter(l => l.args.to.toLowerCase() === address.toLowerCase());
       const sumOf = (token: string, decimals: number) => toNum(arrived.filter(l => l.address.toLowerCase() === token.toLowerCase()).reduce((t, l) => t + l.args.value, 0n), decimals);
       if (tab === 'swap') received = `${f2(sumOf(tokenOut, side === 'buy' ? 18 : sCoin.decimals))} ${outT}`;
       else if (dir === 'mint') received = `${f2(sumOf(TOKEN_ADDR, 18))} DFiUSD`;
       else if (rebalancing()) received = `${f2(sumOf(rCoin.address, rCoin.decimals))} ${rCoin.t}`;
       else received = `${f2(COINS.reduce((t, c) => t + sumOf(c.address, c.decimals), 0))} across the basket`;
       const title = tab === 'swap' ? 'swap confirmed.' : dir === 'mint' ? (rebalancing() ? 'rebalance confirmed.' : 'mint confirmed.') : (rebalancing() ? 'rebalance confirmed.' : 'redemption confirmed.');
-      setDone({ at: Date.now(), hash, sumIn: summary.in, sumOut: received || summary.out, title, inLabel: tab === 'swap' ? 'you paid' : dir === 'mint' ? 'you added' : 'you redeemed' });
-      setHistory(h => [{ kind: summary.kind, hash, amt: tab === 'swap' ? (side === 'buy' ? `+ ${received || summary.out}` : `− ${summary.in}`) : dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
+      setDone({ at: Date.now(), hash: sent, sumIn: summary.in, sumOut: received || summary.out, title, inLabel: tab === 'swap' ? 'you paid' : dir === 'mint' ? 'you added' : 'you redeemed' });
+      setHistory(h => [{ kind: summary.kind, hash: sent!, amt: tab === 'swap' ? (side === 'buy' ? `+ ${received || summary.out}` : `− ${summary.in}`) : dir === 'mint' ? `+ ${summary.out}` : `− ${summary.in}`, when: 'just now' }, ...h]);
       setStep('done');
       showToast({ color: 'var(--ok)', text: title, word: 'CONFIRMED' }, 5000);
       reads.refetch();
     } catch (e) {
-      if (isRejection(e)) {
+      if (sent && !reverted) {
+        setLost(sent);
+        setFailed('your transaction was sent, but we lost track of it. check it on etherscan before trying again, so it doesn’t happen twice.');
+        showToast({ color: 'var(--warn)', text: 'sent. check etherscan for the result.', word: 'SENT' }, 8000);
+      } else if (isRejection(e)) {
         setRejected(true);
         showToast({ color: 'var(--crit)', text: 'request rejected in wallet.', word: 'REJECTED' }, 4000);
       } else if (isOutOfGas(e)) {
@@ -553,7 +512,7 @@ export function AppFlow() {
   const clear = () => { setAmount(''); setFailed(''); };
   const goTab = (t: Tab) => { setTab(t); clear(); };
   const goDir = (d: 'mint' | 'redeem') => { setDir(d); setRebIdx(null); clear(); };
-  const reset = () => { setStep('amount'); setAmount(''); setToast(null); setRejected(false); setDone(null); };
+  const reset = () => { setStep('amount'); setAmount(''); setToast(null); setRejected(false); setDone(null); setLost(null); };
 
   const walletLabel = connected ? short(address) : 'connect wallet';
   // Dev-only preview wallet (see lib/wagmi.ts).
@@ -762,7 +721,7 @@ export function AppFlow() {
                     <div><dt>fee</dt><dd className="mono">0.01% Uniswap pool fee · no DiversiFi fee</dd></div>
                   </dl>
 
-                  <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!swapValid || !safe} onClick={() => swapValid && safe && setStep('review')}>review swap</button>
+                  <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!swapValid || !safe} onClick={() => { if (swapValid && safe) { setSwapIdx(sIdx); setStep('review'); } }}>review swap</button>
                   <div className={s.alts}>
                     <button type="button" className={s.advLink} onClick={() => goTab('contribute')}>or mint &amp; redeem with the reserve directly →</button>
                   </div>
@@ -833,7 +792,7 @@ export function AppFlow() {
                         <div><dt>your reward</dt><dd className="mono" style={{ color: reward > 0 ? 'var(--ok)' : undefined }}>{reward > 0 ? (dir === 'mint' ? `+ ${f2(reward)} DFiUSD` : `${f2(reward)} DFiUSD less to give`) : bounty > 0 ? '—' : 'pool empty right now'}</dd></div>
                         <div><dt>reward pool</dt><dd className="mono">{f2(bounty)} DFiUSD</dd></div>
                       </dl>
-                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid || !safe} onClick={() => rebValid && safe && setStep('review')}>review {dir === 'mint' ? 'mint' : 'redeem'}</button>
+                      <button type="button" className={`btn btn-primary ${s.b52}`} disabled={!rebValid || !safe} onClick={() => { if (rebValid && safe) { setRebIdx(rIdx); setStep('review'); } }}>review {dir === 'mint' ? 'mint' : 'redeem'}</button>
                     </fieldset>
                   )}
 
@@ -912,11 +871,12 @@ export function AppFlow() {
                 </div>
               )}
               {rejected && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>you rejected the request in your wallet. nothing was sent.</p>}
-              {failed && <p role="alert" className="small" style={{ color: 'var(--crit)' }}>{failed}</p>}
+              {failed && <p role="alert" className="small" style={{ color: lost ? 'var(--warn)' : 'var(--crit)' }}>{failed}</p>}
+              {lost && <a href={txUrl(lost)} target="_blank" rel="noopener" className="small">see your transaction on etherscan ↗</a>}
               <p className="foot">{tab === 'swap' ? `Swaps run through Uniswap's official router. Approvals cover exactly this amount. If the price drops more than ${Number(SLIPPAGE_BPS) / 100}% before your swap lands, it cancels itself and only the network fee is spent.` : rebalancing() ? 'Worked out with the contract’s own maths from the reserve as it is now. If someone rebalances first, the reward can be smaller.' : 'Fees are read from the contract and already included above.'} Your wallet will ask you to confirm.</p>
               <div className={s.btnRow}>
-                <button type="button" className={`btn btn-secondary ${s.b52}`} style={{ flex: 1 }} disabled={pending} onClick={() => { setStep('amount'); setRejected(false); setFailed(''); }}>back</button>
-                <button type="button" className={`btn btn-primary ${s.b52}`} style={{ flex: 2 }} disabled={pending} onClick={confirm}>
+                <button type="button" className={`btn btn-secondary ${s.b52}`} style={{ flex: 1 }} disabled={pending} onClick={() => { setStep('amount'); setRejected(false); setFailed(''); setLost(null); }}>back</button>
+                <button type="button" className={`btn btn-primary ${s.b52}`} style={{ flex: 2 }} disabled={pending || !!lost} onClick={confirm}>
                   {pending ? 'waiting…' : rejected || failed ? 'try again' : 'confirm'}
                 </button>
               </div>
@@ -942,7 +902,7 @@ export function AppFlow() {
 
         <aside aria-label={tab === 'contribute' ? 'how rebalancing works' : 'backing'} className={s.aside}>
           {tab === 'contribute' ? (
-            <BasketExplainer reading={reading} dir={dir} bounty={bounty} focusIdx={method === 'rebalance' && anyOpen ? rIdx : -1} amount={method === 'rebalance' ? amt : 0} />
+            <BasketExplainer reading={reading} gap={gapNum} dir={dir} bounty={bounty} focusIdx={method === 'rebalance' && anyOpen ? rIdx : -1} amount={method === 'rebalance' ? amt : 0} />
           ) : (
             <>
               <div className="rail"><span>BACKING</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg)' }}><span className="livedot" />LIVE · {hhmm(reading.readAt)} UTC</span></div>
@@ -994,10 +954,9 @@ export function AppFlow() {
 }
 
 /* ---------- how rebalancing works: live basket vs target, plus the three steps ---------- */
-function BasketExplainer({ reading, dir, bounty, focusIdx, amount }: { reading: ReserveReading; dir: 'mint' | 'redeem'; bounty: number; focusIdx: number; amount: number }) {
-  const g = gaps(reading);
+function BasketExplainer({ reading, gap, dir, bounty, focusIdx, amount }: { reading: ReserveReading; gap: number[] | null; dir: 'mint' | 'redeem'; bounty: number; focusIdx: number; amount: number }) {
   const max = Math.max(...reading.coins.map(c => Math.max(c.current, c.target))) * 1.15;
-  const balanced = g.every(x => Math.abs(x.diff) <= 0.01);
+  const balanced = gap?.every(d => Math.abs(d) <= 0.01);
   return (
     <>
       <div className="rail"><span>HOW REBALANCING WORKS</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg)' }}><span className="livedot" />LIVE</span></div>
@@ -1007,8 +966,8 @@ function BasketExplainer({ reading, dir, bounty, focusIdx, amount }: { reading: 
       <div className={s.bk} role="img" aria-label={`Basket now: ${reading.coins.map((c, i) => `${c.t} ${c.current.toFixed(1)}% against a ${c.target.toFixed(1)}% target`).join(', ')}.`}>
         {reading.coins.map((c, i) => {
           const coin = COINS[i];
-          const d = g[i].diff;
-          const state = Math.abs(d) <= 0.01 ? 'on target' : d > 0 ? `short ${f2(d)}` : `over ${f2(-d)}`;
+          const d = gap?.[i] ?? 0;
+          const state = !gap ? '—' : Math.abs(d) <= 0.01 ? 'on target' : d > 0 ? `short ${f2(d)}` : `over ${f2(-d)}`;
           const sel = i === focusIdx && amount > 0;
           const after = sel ? ((c.held + (dir === 'mint' ? amount : -amount)) / (reading.total + (dir === 'mint' ? amount : -amount))) * 100 : c.current;
           return (
@@ -1033,7 +992,7 @@ function BasketExplainer({ reading, dir, bounty, focusIdx, amount }: { reading: 
       </ol>
 
       <dl className={s.bkStats}>
-        <div><dt>basket</dt><dd>{balanced ? 'balanced' : 'off target'}</dd></div>
+        <div><dt>basket</dt><dd>{balanced === undefined ? '—' : balanced ? 'balanced' : 'off target'}</dd></div>
         <div><dt>reward pool</dt><dd>{f2(bounty)} DFiUSD</dd></div>
       </dl>
     </>

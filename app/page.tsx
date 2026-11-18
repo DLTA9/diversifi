@@ -10,9 +10,6 @@ import s from './home.module.css';
 // Static pre-render, re-read from chain at most once a minute (ISR) so crawlers see current figures.
 export const revalidate = 60;
 
-// TODO(open item 4): CertiK findings and report link. Flip once the report is public.
-const CERTIK_PUBLIC = true;
-
 export default async function Home() {
   let initial = FALLBACK_READING;
   let ok = true;
@@ -83,7 +80,7 @@ export default async function Home() {
         {/* 02 PROOF */}
         <section aria-label="proof" className={s.proof}>
           <div className={`wrap ${s.proofGrid}`}>
-            <a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)" className={s.proofCell}><span className="label">AUDITED BY</span><span>{CERTIK_PUBLIC ? 'NETHERMIND · CERTIK ↗' : 'NETHERMIND ↗'}</span></a>
+            <a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)" className={s.proofCell}><span className="label">AUDITED BY</span><span>NETHERMIND · CERTIK ↗</span></a>
             <a href={rmUrl} target="_blank" rel="noopener" className={s.proofCell}><span className="label">LIVE SINCE</span><span>SEP 2025</span></a>
             <a href="#reserve" className={s.proofCell}><span className="label">RESERVES</span><span>ON-CHAIN, VIEWABLE ANY TIME</span></a>
           </div>
@@ -188,7 +185,7 @@ export default async function Home() {
                 <div><dt>NETWORK</dt><dd>Ethereum mainnet</dd></div>
                 <div><dt>LIVE SINCE</dt><dd>Sep 2025<span className="dim">·</span><a href={`${ETHERSCAN}/tx/${DEPLOY_TX}`} target="_blank" rel="noopener" aria-label="DFiUSD deployment transaction on Etherscan">deployment tx ↗</a></dd></div>
                 {/* TODO(open item 4): link the CertiK report once public. */}
-                <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a>{CERTIK_PUBLIC && <><span className="dim">·</span>CertiK</>}</dd></div>
+                <div><dt>AUDITS</dt><dd><a href={AUDIT_URL} target="_blank" rel="noopener" aria-label="Nethermind security audit report (PDF)">Nethermind ↗</a><span className="dim">·</span>CertiK</dd></div>
               </dl>
             </div>
           </div>

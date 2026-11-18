@@ -14,7 +14,7 @@ const CSP = [
   "img-src 'self' data: blob: https://*.walletconnect.com https://*.walletconnect.org https://*.reown.com https://*.web3modal.com https://*.web3modal.org",
   [
     "connect-src 'self'",
-    'https://ethereum-rpc.publicnode.com https://eth.llamarpc.com https://*.g.alchemy.com',
+    'https://ethereum-rpc.publicnode.com https://eth.drpc.org https://eth.llamarpc.com https://*.g.alchemy.com',
     'https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org',
     'https://*.reown.com https://*.web3modal.com https://*.web3modal.org',
     'https://*.coinbase.com wss://*.coinbase.com',

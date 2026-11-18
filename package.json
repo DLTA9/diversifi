@@ -8,7 +8,8 @@
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "test": "npx -y tsx@4.19.2 tests/guard.test.ts && npx -y tsx@4.19.2 tests/flow.test.ts"
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "4.4.0",

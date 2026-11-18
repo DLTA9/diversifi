@@ -43,7 +43,6 @@ export const stateViewAbi = parseAbi([
 export const erc20Abi = parseAbi([
   'function balanceOf(address account) view returns (uint256)',
   'function allowance(address owner, address spender) view returns (uint256)',
-  'function totalSupply() view returns (uint256)',
   // Declared without a return value on purpose: USDT's approve returns nothing, and declaring a bool would make
   // simulations of USDT approvals fail. The app never reads this return value.
   'function approve(address spender, uint256 value)',

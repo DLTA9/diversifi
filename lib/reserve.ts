@@ -27,6 +27,8 @@ const RPCS = [
   typeof window === 'undefined' ? process.env.RPC_URL : undefined,
   process.env.NEXT_PUBLIC_RPC_URL,
   'https://ethereum-rpc.publicnode.com',
+  // Second free public node that allows browser requests, so one provider's outage doesn't switch the app off.
+  'https://eth.drpc.org',
   // llamarpc rejects browser requests (no CORS headers), so only the server uses it.
   typeof window === 'undefined' ? 'https://eth.llamarpc.com' : undefined,
 ].filter((u): u is string => !!u);

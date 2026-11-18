@@ -33,7 +33,7 @@ export type Guard = { state: 'checking' | 'ok' | 'blocked'; reason: string };
 
 export function evaluateGuard(g: GuardInput): Guard {
   if (g.paused) return { state: 'blocked', reason: g.pauseMessage || 'The app is paused for maintenance. Your funds are safe; try again later.' };
-  const reads = [g.indexToken, g.tokenReserveManager, g.emigrating, g.migrating, g.targetAssets, g.currentAssets];
+  const reads = [g.indexToken, g.tokenReserveManager, g.emigrating, g.migrating, g.targetAssets, g.currentAssets, g.frozen];
   if (reads.some(r => r === null)) return { state: 'blocked', reason: 'We couldn’t verify the DiversiFi contracts right now, so transactions are switched off. Try again in a minute.' };
   if (reads.some(r => r === undefined)) return { state: 'checking', reason: 'Verifying the DiversiFi contracts…' };
   if (!isAddressEqual(g.indexToken!, TRUSTED.token) || !isAddressEqual(g.tokenReserveManager!, TRUSTED.reserveManager))

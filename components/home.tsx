@@ -381,8 +381,8 @@ const okEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 export function Signup() {
   const [email, setEmail] = useState('');
-  const [state, setState] = useState<'open' | 'error' | 'done' | 'sending'>('open');
-  const err = state === 'error';
+  const [state, setState] = useState<'open' | 'error' | 'failed' | 'done' | 'sending'>('open');
+  const err = state === 'error' || state === 'failed';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -390,8 +390,8 @@ export function Signup() {
     setState('sending');
     try {
       const r = await fetch('/api/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: email.trim() }) });
-      setState(r.ok ? 'done' : 'error');
-    } catch { setState('error'); }
+      setState(r.ok ? 'done' : r.status === 400 ? 'error' : 'failed');
+    } catch { setState('failed'); }
   };
 
   return (
@@ -405,7 +405,7 @@ export function Signup() {
               className={s.email} style={{ borderColor: err ? 'var(--crit)' : 'var(--strong)' }} />
             <button type="submit" className={`btn btn-secondary ${s.subBtn}`} disabled={state === 'sending'}>subscribe</button>
           </div>
-          {err && <p id="signup-err" role="alert" style={{ fontSize: 14, color: 'var(--crit)' }}>enter a valid email address.</p>}
+          {err && <p id="signup-err" role="alert" style={{ fontSize: 14, color: 'var(--crit)' }}>{state === 'failed' ? 'couldn’t sign you up right now. please try again later.' : 'enter a valid email address.'}</p>}
           <p style={{ fontSize: 14 }} className="dim">Stay news-pegged: reserve updates, launches and what&apos;s next, about once a month.</p>
         </>
       ) : (

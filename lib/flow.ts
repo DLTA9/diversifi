@@ -25,12 +25,6 @@ export function mintDeposits(mintAmount: bigint, targets: readonly TargetParam[]
   });
 }
 
-/** Approximate per-coin payout of `burn(amount)` at the current mix (in dollars, for display). */
-export function burnPayout(amount: number, burnFee: number, current: number[]) {
-  const net = amount * (1 - burnFee);
-  return { net, parts: current.map(sh => (net * sh) / 100) };
-}
-
 /** Parse a ≤2-decimal user string into 18-decimal units. */
 export function parseAmount(v: string): bigint | null {
   if (!/^\d*\.?\d{0,2}$/.test(v) || v === '' || v === '.') return null;

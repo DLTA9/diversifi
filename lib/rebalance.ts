@@ -25,9 +25,12 @@ export function maxDelta(a: RebAsset, total: bigint): bigint {
   return ((target - a.held) << SHIFT) / (SCALE - norm); // BigInt division truncates toward zero, like Solidity
 }
 
+/** getEqualizationVectorScaled for one coin: target − held (18 decimals). Positive = short, negative = over. */
+export const gapOf = (a: RebAsset, total: bigint) => ((a.targetAllocation << ALLOC_SHIFT) * total >> SHIFT) - a.held;
+
 /** getTotalReservesDiscrepencyScaled: sum of |target − held| over the current asset list. */
 export function discrepancy(assets: RebAsset[], total: bigint): bigint {
-  return assets.reduce((sum, a) => sum + abs(((a.targetAllocation << ALLOC_SHIFT) * total >> SHIFT) - a.held), 0n);
+  return assets.reduce((sum, a) => sum + abs(gapOf(a, total)), 0n);
 }
 
 /** ReserveMath.calcEqualizationBounty. Returns null where the contract would revert (underflow). */

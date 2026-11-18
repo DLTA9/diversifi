@@ -222,7 +222,8 @@ Make the coin list dynamic: today `lib/coins.ts` hardcodes seven assets, and gov
    - if any of them warns, file a false-positive report at report.blockaid.io and an issue on github.com/MetaMask/eth-phishing-detect, from the domain owner's side
    - WalletConnect now reports the real page address (`lib/wagmi.ts`), so its Verify check sees no mismatch
    - **The reserve contract itself is marked "untrusted" by Blockaid** (seen 16 Nov 2026 on a basket-mint approval: "High-risk approval … contract 0x8978f3a0…8327 involved in the transaction is untrusted"). This is a reputation flag, not a malicious finding, but every user who mints or rebalances will see it. **Client action:** the DiversiFi team reports it as a false positive to Blockaid (the "Report an issue" link in the MetaMask warning, or report.blockaid.io), naming the ReserveManagerV1, DFiUSD, ReserveManagerHelpers and timelock addresses with their Sourcify links and audit.
-6. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
+6. **Rate limit for wallet history (audit 18 Nov 2026):** in Cloudflare → diversifi.tech → Security → WAF → Rate limiting rules, add one rule: path `/api/activity`, about 20 requests per minute per IP, action Block. Without it, a script asking about random wallets can use up the monthly Alchemy allowance (each uncached call costs 240 units).
+7. **Launch hardening:** with the domain owner, turn on DNSSEC, add CAA records and check auto-renew (3.3, and checklist part 2 E). Then set up monitoring and the runbook, and point diversifi.tech at the new Worker.
 
 ---
 

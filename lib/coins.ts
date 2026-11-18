@@ -46,6 +46,3 @@ export const X_URL = 'https://x.com/0xDiversiFi';
 
 export const ALLOCATION_DATE = '30 Oct 2026';
 export const FOOTNOTE = `Target allocation as of ${ALLOCATION_DATE}. Diversification reduces single-issuer exposure; it does not eliminate risk.`;
-export const VAULT_FOOTNOTE = 'DiversiFi Vault is not live. Yield is variable and not guaranteed. Smart-contract and underlying-asset risk apply.';
-// TODO(open item 4): legal entity and jurisdiction placeholders.
-export const ENTITY_FOOTNOTE = 'DiversiFi is operated by [legal entity name], [jurisdiction]. DFiUSD is not a bank deposit and is not insured.';

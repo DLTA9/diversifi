@@ -1,6 +1,8 @@
 // A wallet's DFiUSD history (mints, redemptions, Uniswap buys and sells, transfers), via Alchemy's Transfers API.
 // Runs on the server so the Alchemy key (the RPC_URL secret) never reaches the browser. Results are cached for a
 // minute per wallet at Cloudflare's edge, which also keeps repeated requests from using up the free Alchemy quota.
+// shortcut: no rate limit in code (each uncached call costs 240 Alchemy units; the edge cache is off on workers.dev),
+// add a Cloudflare rate-limiting rule for /api/activity when diversifi.tech points here.
 import { formatUnits, getAddress, isAddress } from 'viem';
 import { DEPLOY_BLOCK, TOKEN_ADDR } from '@/lib/coins';
 import { V4 } from '@/lib/uniswap';

@@ -1,13 +1,14 @@
 // Fork test: full-basket mint and redeem, and one-coin rebalancing with a reward, on a private copy of mainnet
-// (anvil at :8545). Uses the same quotes, maths and steps as the app: exact quote → exact approvals → simulate → send.
+// (anvil at :8545), through the app's own lib/flows.ts code: exact quote → exact approvals → simulate → send.
 // To make rebalancing possible, the test acts as the governance timelock on the copy (never on the real chain):
 // it moves 5% of USDC's target to USDT and funds a 25 DFiUSD reward pool.
-import { createPublicClient, createTestClient, createWalletClient, getAddress, http, parseAbi, parseUnits, type Address } from 'viem';
+import { createPublicClient, createTestClient, createWalletClient, getAddress, http, parseAbi, parseUnits, type Address, type PublicClient } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { mainnet } from 'viem/chains';
 import { erc20Abi, helpersAbi, reserveManagerAbi } from '../lib/abi';
 import { COINS, HELPERS_ADDR, RM_ADDR, TOKEN_ADDR } from '../lib/coins';
 import { quoteRebalance, room, type RebState } from '../lib/rebalance';
+import { sendBurn, sendMint, sendRebalance, type Wallet } from '../lib/flows';
 
 const chain = { ...mainnet, rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } } };
 const transport = http('http://127.0.0.1:8545', { timeout: 60_000 });
@@ -37,7 +38,8 @@ const as = async (who: Address, fn: (w: ReturnType<typeof createWalletClient>) =
   return r;
 };
 const reverts = async (fn: () => Promise<unknown>) => { try { await fn(); return false; } catch { return true; } };
-const approveExact = (token: Address, amount: bigint) => send(wallet.writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, amount] }));
+const setApproval = (token: Address, amount: bigint) => send(wallet.writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [RM_ADDR, amount] }));
+const w: Wallet = { client: pub as unknown as PublicClient, account: me.address, write: call => wallet.writeContract(call as never), sign: () => { throw new Error('not used for the reserve'); } };
 
 async function rebState(): Promise<RebState> {
   const [cur, total, bounty, maxReserves] = await Promise.all([
@@ -60,9 +62,7 @@ async function rebState(): Promise<RebState> {
   const [inputs] = await pub.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteMint', args: [mintAmt] });
   const before = await Promise.all(COINS.map(c => bal(c.address)));
   const dfi0 = await bal(DFI);
-  for (const x of inputs) await approveExact(x.assetAddress, x.amount);
-  await pub.simulateContract({ ...RM, functionName: 'mint', args: [mintAmt, '0x'], account: me });
-  await send(wallet.writeContract({ ...RM, functionName: 'mint', args: [mintAmt, '0x'] }));
+  await send(sendMint(w, mintAmt, inputs.map(x => ({ token: x.assetAddress, amount: x.amount }))));
   check('basket mint: received exactly 100 DFiUSD', (await bal(DFI)) - dfi0 === mintAmt);
   const spentOk = await Promise.all(COINS.map(async (c, i) => before[i] - (await bal(c.address)) === (inputs.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n)));
   check('basket mint: each coin spent exactly the quoted amount', spentOk.every(Boolean));
@@ -73,12 +73,11 @@ async function rebState(): Promise<RebState> {
   const burnAmt = parseUnits('50', 18);
   const [outputs] = await pub.readContract({ address: HELPERS_ADDR, abi: helpersAbi, functionName: 'quoteBurn', args: [burnAmt] });
   const b2 = await Promise.all(COINS.map(c => bal(c.address)));
-  await pub.simulateContract({ ...RM, functionName: 'burn', args: [burnAmt, false, '0x'], account: me });
-  await send(wallet.writeContract({ ...RM, functionName: 'burn', args: [burnAmt, false, '0x'] }));
+  await send(sendBurn(w, burnAmt));
   check('basket redeem: DFiUSD went down by exactly 50', dfi0 + mintAmt - (await bal(DFI)) === burnAmt);
   const gotOk = await Promise.all(COINS.map(async (c, i) => (await bal(c.address)) - b2[i] === (outputs.find(x => x.assetAddress.toLowerCase() === c.address.toLowerCase())?.amount ?? 0n)));
   check('basket redeem: each coin received exactly the quoted amount', gotOk.every(Boolean));
-  check('basket redeem: can’t redeem more than the balance', await reverts(() => pub.simulateContract({ ...RM, functionName: 'burn', args: [parseUnits('1000', 18), false, '0x'], account: me })));
+  check('basket redeem: can’t redeem more than the balance', await reverts(() => sendBurn(w, parseUnits('1000', 18))));
 
   /* ---------- make rebalancing possible on the copy: move 5% of USDC's target to USDT, fund a 25 DFiUSD reward ---------- */
   const targets = await pub.readContract({ ...RM, functionName: 'getTargetAssetParams' });
@@ -99,18 +98,15 @@ async function rebState(): Promise<RebState> {
   check('rebalance quote is ok and pays a reward', q.ok && q.reward > 0n, q.ok ? `reward ${Number(q.reward) / 1e18}` : q.reason);
   if (q.ok) {
     const [u0, d0] = [await bal(usdt), await bal(DFI)];
-    await approveExact(usdt, q.coinUnits);
-    await pub.simulateContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdt, q.coinUnits], account: me });
-    await send(wallet.writeContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdt, q.coinUnits] }));
+    await send(sendRebalance(w, usdt, q.coinUnits));
     check('rebalance mint: spent exactly 200 USDT', u0 - (await bal(usdt)) === units);
     check('rebalance mint: received exactly 200 DFiUSD + the predicted reward', (await bal(DFI)) - d0 === q.dfi, `${Number(q.dfi) / 1e18} DFiUSD`);
     check('rebalance mint: no USDT approval left over', (await pub.readContract({ address: usdt, abi: erc20Abi, functionName: 'allowance', args: [me.address, RM_ADDR] })) === 0n);
   }
   st = await rebState();
   const over = room(st, usdt, 'mint') + 1n;
-  await approveExact(usdt, over);
-  check('rebalance mint: one unit over the limit is refused by the contract', await reverts(() => pub.simulateContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdt, over], account: me })));
-  await approveExact(usdt, 0n);
+  check('rebalance mint: one unit over the limit is refused by the contract', await reverts(() => sendRebalance(w, usdt, over)));
+  await setApproval(usdt, 0n);
 
   /* ---------- rebalance redeem: take out USDC (over target) ---------- */
   st = await rebState();
@@ -119,11 +115,10 @@ async function rebState(): Promise<RebState> {
   check('rebalance redeem quote is ok', qr.ok, qr.ok ? `burns ${Number(qr.dfi) / 1e18} DFiUSD, reward ${Number(qr.reward) / 1e18}` : qr.reason);
   if (qr.ok) {
     const [u0, d0] = [await bal(usdc), await bal(DFI)];
-    await pub.simulateContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdc, -out], account: me });
-    await send(wallet.writeContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdc, -out] }));
+    await send(sendRebalance(w, usdc, -out));
     check('rebalance redeem: received exactly 40 USDC', (await bal(usdc)) - u0 === out);
     check('rebalance redeem: burned exactly the predicted DFiUSD (40 minus reward)', d0 - (await bal(DFI)) === qr.dfi);
   }
-  check('rebalance redeem: taking out a coin that is short is refused', await reverts(() => pub.simulateContract({ ...RM, functionName: 'swapTowardsTarget', args: [usdt, -1n], account: me })));
+  check('rebalance redeem: taking out a coin that is short is refused', await reverts(() => sendRebalance(w, usdt, -1n)));
   process.exit(fail);
 })().catch(e => { console.error('CRASH', e.shortMessage ?? e.message); process.exit(1); });

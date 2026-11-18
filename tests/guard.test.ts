@@ -14,6 +14,7 @@ const cases: [string, object, string][] = [
   ['known coin, wrong decimals', { targetAssets: [{ assetAddress: assets[0].assetAddress, decimals: 18 }] }, 'blocked'],
   ['current list read failed', { currentAssets: null }, 'blocked'],
   ['frozen wallet', { frozen: true }, 'blocked'],
+  ['frozen check failed to load', { frozen: null }, 'blocked'],
   ['pause switch on', { paused: true }, 'blocked'],
   ['lowercase addresses still match', { indexToken: TOK.toLowerCase() }, 'ok'],
 ];
